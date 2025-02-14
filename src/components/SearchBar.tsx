@@ -112,7 +112,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ isOpen, onClose }) => {
             ) : query.trim().length >= 2 ? (
               <div className="p-8 text-center text-gray-500">
                 <p>No matches found for "{query}"</p>
-                <p className="mt-2 text-sm">Try different keywords or browse our categories</p>
+                <p className="mt-2 text-sm">Try different keywords</p>
               </div>
             ) : query.trim().length > 0 ? (
               <div className="p-8 text-center text-gray-500">

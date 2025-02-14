@@ -82,25 +82,48 @@ const ProductPage = ({ params }: ProductPageProps) => {
     const fetchProductAndReviews = async () => {
       try {
         setLoading(true);
-        console.log('Fetching product with ID:', resolvedParams.slug); // Debug log
 
-        const productResponse = await (databases.getDocument as (
-          databaseId: string,
-          collectionId: string,
-          documentId: string
-        ) => Promise<Models.Document>)(
-          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
-          process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
-          resolvedParams.slug // This should be the document ID
-        );
+        // First try to fetch by ID
+        const fetchProduct = async () => {
+          try {
+            // Try direct ID fetch first
+            const productResponse = await (databases.getDocument as (
+              databaseId: string,
+              collectionId: string,
+              documentId: string
+            ) => Promise<Models.Document>)(
+              process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+              process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
+              resolvedParams.slug
+            );
+            return productResponse;
+          } catch (error) {
+            // If direct ID fetch fails, try to find by slug
+            const response = await (databases.listDocuments as (
+              databaseId: string,
+              collectionId: string,
+              queries?: string[]
+            ) => Promise<Models.DocumentList<Models.Document>>)(
+              process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+              process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
+              [Query.equal('slug', resolvedParams.slug)]
+            );
 
-        console.log('Raw API response:', productResponse); // Debug log
+            if (response.documents.length === 0) {
+              throw new Error('Product not found');
+            }
+
+            return response.documents[0];
+          }
+        };
+
+        const productResponse = await fetchProduct();
 
         if (!productResponse) {
           throw new Error('Product not found');
         }
 
-        // Transform the product data according to schema
+        // Transform product data
         const transformedProduct: ProductData = {
           $id: productResponse.$id,
           name: productResponse.name || '',
@@ -122,7 +145,6 @@ const ProductPage = ({ params }: ProductPageProps) => {
             : [Number(productResponse.sale_price) || 0]
         };
 
-        console.log('Transformed product:', transformedProduct); // Debug log
         setProduct(transformedProduct);
         
         if (transformedProduct.category.length > 0) {
