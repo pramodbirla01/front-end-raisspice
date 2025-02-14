@@ -26,7 +26,11 @@ export const fetchHeroSections = createAsyncThunk(
   'heroSection/fetchAll',
   async () => {
     try {
-      const response = await databases.listDocuments(
+      const response = await (databases.listDocuments as (
+        databaseId: string,
+        collectionId: string,
+        queries?: string[]
+      ) => Promise<Models.DocumentList<HeroSection>>)(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         process.env.NEXT_PUBLIC_APPWRITE_HERO_COLLECTION_ID!,
         [
@@ -34,7 +38,7 @@ export const fetchHeroSections = createAsyncThunk(
           Query.limit(10)
         ]
       );
-      return response.documents as unknown as HeroSection[];
+      return response.documents as HeroSection[];
     } catch (error) {
       throw new Error('Failed to fetch hero sections');
     }

@@ -17,15 +17,17 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function HomeContent() {
   const dispatch = useDispatch<AppDispatch>();
-  const [dataFetched, setDataFetched] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // Update selectors to match your state structure
   const heroSectionData = useSelector((state: RootState) => state.heroSection.heroSections);
   const collectionsData = useSelector((state: RootState) => state.collections.collections);
-  
+  const loading = useSelector((state: RootState) => 
+    state.heroSection.loading || state.collections.loading
+  );
+
   useEffect(() => {
-    if (!dataFetched) {
-      const loadData = async () => {
+    if (!isInitialized) {
+      const initializeData = async () => {
         try {
           await Promise.all([
             dispatch(fetchHeroSections()),
@@ -34,25 +36,19 @@ export default function HomeContent() {
         } catch (error) {
           console.error('Failed to load data:', error);
         } finally {
-          setDataFetched(true);
+          setIsInitialized(true);
         }
       };
-      loadData();
+      initializeData();
     }
-  }, [dispatch, dataFetched]);
+  }, [dispatch, isInitialized]);
 
-  // Show loader only during initial data fetch
-  if (!dataFetched) {
+  if (loading && !isInitialized) {
     return <Loader isLoading={true} />;
   }
 
-  // Update the checks to match the new state structure
-  if (!heroSectionData?.length || !collectionsData?.length) {
-    return <div>No data available</div>;
-  }
-
   return (
-    // <ErrorBoundary>
+    <ErrorBoundary>
       <main className="min-h-screen">
         <div>
           <HeroSection />
@@ -63,6 +59,6 @@ export default function HomeContent() {
           <TrustedBy />
         </div>
       </main>
-    // </ErrorBoundary>
+    </ErrorBoundary>
   );
 }

@@ -58,7 +58,7 @@ const ProductCard: React.FC<ProductCardProps> = (props) => {
     return getStorageFileUrl(url);
   };
 
-  console.log('ProductCard props:', props); // Debug log
+  
 
   // Format price helper function - ensure it always returns a number
   const formatPrice = (amount: number | undefined) => {

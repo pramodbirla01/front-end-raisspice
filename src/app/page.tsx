@@ -1,10 +1,18 @@
 'use client'
+
 import dynamic from 'next/dynamic';
 import { Suspense } from 'react';
-import ClientWrapper from './ClientWrapper';
+import Loader from '@/components/Loader';
 
-const HomeContent = dynamic(() => import('./HomeContent'), { ssr: false });
+const HomeContent = dynamic(() => import('./HomeContent'), {
+  loading: () => <Loader isLoading={true} />,
+  ssr: false
+});
 
 export default function Home() {
-  return <ClientWrapper />;
+  return (
+    <Suspense fallback={<Loader isLoading={true} />}>
+      <HomeContent />
+    </Suspense>
+  );
 }

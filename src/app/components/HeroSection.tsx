@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,9 +16,12 @@ const HeroSection = () => {
   const { heroSections, loading, error } = useSelector((state: RootState) => state.heroSection);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Only fetch if we don't have data
   useEffect(() => {
-    dispatch(fetchHeroSections());
-  }, [dispatch]);
+    if (!heroSections.length) {
+      dispatch(fetchHeroSections());
+    }
+  }, [dispatch, heroSections.length]);
 
   useEffect(() => {
     if (heroSections.length > 0) {
@@ -27,7 +30,7 @@ const HeroSection = () => {
       }, 5000);
       return () => clearInterval(timer);
     }
-  }, [currentSlide, heroSections]);
+  }, [heroSections.length]);
 
   const getImageUrl = (fileId: string) => {
     try {
@@ -72,13 +75,13 @@ const HeroSection = () => {
       className="relative w-full h-[calc(100vh-6rem)] mt-20 bg-bgColor max-lg:h-[80vh]"
     >
       <div className="w-[95%] mx-auto h-full rounded-2xl overflow-hidden">
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false}>
           <motion.div
             key={currentSlide}
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.7 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
             className="relative h-full w-full"
           >
             {/* Image */}
@@ -86,11 +89,10 @@ const HeroSection = () => {
               <Image
                 width={1920}
                 height={1080}
-                src={getImageUrl(heroSections[currentSlide].image)}
-                alt={heroSections[currentSlide].heading}
+                src={getImageUrl(heroSections[currentSlide]?.image)}
+                alt={heroSections[currentSlide]?.heading || ''}
                 className="w-full h-full object-cover"
                 priority
-                unoptimized // Add this to bypass Next.js image optimization
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30" />
             </div>

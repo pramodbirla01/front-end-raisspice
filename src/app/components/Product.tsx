@@ -10,9 +10,22 @@ import { motion, useInView } from "framer-motion";
 import { Collection } from '@/types/collection';
 import { Product } from '@/types/product';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import { databases } from '@/lib/appwrite';
+import { databases, Models } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { getStorageFileUrl } from '@/lib/appwrite';
+
+interface ProductDocument extends Models.Document {
+  name: string;
+  description: string;
+  category: string[];
+  weight: number[];
+  image: string;
+  additionalImages?: string[];
+  stock: number;
+  product_collection: string[];
+  local_price: number[];
+  sale_price: number[];
+}
 
 interface ProductComponentProps {}
 
@@ -33,10 +46,14 @@ const ProductComponent: React.FC<ProductComponentProps> = () => {
 
   const fetchInitialProducts = async () => {
     try {
-      const response = await databases.listDocuments(
+      const response = await (databases.listDocuments as (
+        databaseId: string,
+        collectionId: string,
+        queries?: string[]
+      ) => Promise<Models.DocumentList<ProductDocument>>)(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
-        [Query.limit(4)] // Fetch only first 4 products initially
+        [Query.limit(4)]
       );
 
       if (!response || !response.documents) {
@@ -44,13 +61,13 @@ const ProductComponent: React.FC<ProductComponentProps> = () => {
         return;
       }
 
-      const mappedProducts = response.documents.map(product => ({
+      const mappedProducts = response.documents.map((product: ProductDocument) => ({
         $id: product.$id,
         name: product.name,
         description: product.description,
         category: product.category || [],
         weight: product.weight || [],
-        image: getStorageFileUrl(product.image), // Convert image ID to full URL
+        image: getStorageFileUrl(product.image),
         additionalImages: (product.additionalImages || []).map((imgId: string) => getStorageFileUrl(imgId)),
         stock: product.stock || 0,
         product_collection: product.product_collection || [],
@@ -75,21 +92,25 @@ const ProductComponent: React.FC<ProductComponentProps> = () => {
     setActiveCollection(collectionId);
     
     try {
-      const response = await databases.listDocuments(
+      const response = await (databases.listDocuments as (
+        databaseId: string,
+        collectionId: string,
+        queries?: string[]
+      ) => Promise<Models.DocumentList<ProductDocument>>)(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
         [
           Query.limit(100),
-          Query.contains('product_collection', collectionId) // Fix: Use contains() instead of equal()
+          Query.search('product_collection', collectionId)
         ]
       );
 
-      const filteredProducts = response.documents.filter(product => 
+      const filteredProducts = response.documents.filter((product: ProductDocument) => 
         Array.isArray(product.product_collection) && 
         product.product_collection.includes(collectionId)
-      ).slice(0, 4); // Take only first 4 filtered products
+      ).slice(0, 4);
 
-      const mappedProducts = filteredProducts.map(product => ({
+      const mappedProducts = filteredProducts.map((product: ProductDocument) => ({
         $id: product.$id,
         name: product.name,
         description: product.description,
