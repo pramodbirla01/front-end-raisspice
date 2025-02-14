@@ -3,6 +3,14 @@ import { CollectionState, Collection } from '@/types/collection';
 import { databases } from '@/lib/appwrite';
 import { Query, Models } from 'appwrite';
 
+interface CollectionDocument extends Models.Document {
+  name: string;
+  description: string;
+  $id: string;
+  $createdAt: string;
+  $updatedAt: string;
+}
+
 const initialState: CollectionState = {
   collections: [],
   loading: false,
@@ -18,7 +26,11 @@ export const fetchCollections = createAsyncThunk(
   'collections/fetchAll',
   async () => {
     try {
-      const response = await databases.listDocuments(
+      const response = await (databases.listDocuments as (
+        databaseId: string,
+        collectionId: string,
+        queries?: string[]
+      ) => Promise<Models.DocumentList<CollectionDocument>>)(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_COLLECTION_ID!,
         [
@@ -26,8 +38,8 @@ export const fetchCollections = createAsyncThunk(
         ]
       );
       
-      const collections: Collection[] = response.documents.map(doc => ({
-        id: doc.$id, // Use string ID instead of parsing to number
+      const collections: Collection[] = response.documents.map((doc: CollectionDocument) => ({
+        id: doc.$id,
         documentId: doc.$id,
         name: doc.name,
         description: doc.description,

@@ -26,7 +26,11 @@ const Product_Display_Category = () => {
 
   const fetchCollectionsData = async () => {
     try {
-      const response = await databases.listDocuments(
+      const response = await (databases.listDocuments as (
+        databaseId: string,
+        collectionId: string,
+        queries?: string[]
+      ) => Promise<Models.DocumentList<AppwriteCollection>>)(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         process.env.NEXT_PUBLIC_APPWRITE_COLLECTION_COLLECTION_ID!
       );

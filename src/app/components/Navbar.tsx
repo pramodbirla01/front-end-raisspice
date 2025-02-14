@@ -19,6 +19,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { setCartOpen } from '@/store/slices/cartSlice';
 
+// Update the Category interface to match ProductCategory
+interface Category {
+  $id: string;
+  name: string;
+  slug?: string;  // Make slug optional to match ProductCategory
+  description?: string;
+  sub_text?: string;
+}
+
 const Navbar = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -146,7 +155,8 @@ const Navbar = () => {
                     width={80} 
                     height={60} 
                     alt="Logo"
-                    className="h-16 w-auto"
+                    className="h-16 w-auto object-contain"
+                    priority
                   />
                 </div>
               </Link>
@@ -179,20 +189,21 @@ const Navbar = () => {
                             <ChevronDown className="w-4 h-4" />
                           </motion.span>
                         </motion.button>
-                        <AnimatePresence>
+                        <AnimatePresence mode="wait">
                           {isDesktopCategoryOpen && (
                             <motion.div
+                              key="category-dropdown"
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
                               className="absolute top-full left-0 w-48 bg-white shadow-xl rounded-lg py-2 z-50"
                             >
-                              {categories.map((category) => (
+                              {categories?.map((category: Category) => (
                                 <Link
-                                  key={category.id}
-                                  href={`/shop?category=${category.$id}`}
+                                  key={category.$id}
+                                  href={`/shop?category=${category.slug || category.name.toLowerCase().replace(/\s+/g, '-')}`}
                                   className="block px-4 py-2 text-gray-800 hover:bg-gray-50 hover:text-lightRed transition-colors duration-300"
-                                  onClick={() => handleCategoryClick(category.slug)}
+                                  onClick={() => handleCategoryClick(category.slug || category.name.toLowerCase().replace(/\s+/g, '-'))}
                                 >
                                   {category.name}
                                 </Link>
@@ -292,7 +303,8 @@ const Navbar = () => {
                       alt="Logo"
                       width={64}
                       height={64}
-                      className="h-14 w-auto"
+                      className="h-14 w-auto object-contain"
+                      priority
                     />
                   </div>
                 </Link>
@@ -368,7 +380,7 @@ const Navbar = () => {
                                 {categories.map((category) => (
                                   <Link
                                     href={`/shop?category=${category.slug}`}
-                                    key={category.id}
+                                    key={category.$id} // Changed from category.id to category.$id
                                     className="block py-2 px-8 text-sm text-gray-600 hover:text-lightRed hover:bg-gray-50 transition-colors duration-300"
                                     onClick={() => {
                                       setIsMenuOpen(false);

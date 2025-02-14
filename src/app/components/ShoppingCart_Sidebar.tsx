@@ -9,6 +9,7 @@ import { AppDispatch, RootState } from '../../store/store';
 import { fetchCart, updateCartItem, removeCartItem, refreshCartExpiry, createCart, setCartOpen } from '../../store/slices/cartSlice';
 import { motion } from 'framer-motion';
 import { CartItem } from '../../types/cart';
+import { useRouter } from 'next/navigation';
 
 interface ShoppingCartProps {
   onClose: () => void;
@@ -17,6 +18,7 @@ interface ShoppingCartProps {
 const ShoppingCart_Sidebar: React.FC<ShoppingCartProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { cart, loading, isCartOpen } = useSelector((state: RootState) => state.cart);
+  const router = useRouter();
 
   useEffect(() => {
     if (isCartOpen) {
@@ -50,6 +52,22 @@ const ShoppingCart_Sidebar: React.FC<ShoppingCartProps> = ({ onClose }) => {
     await dispatch(removeCartItem({
       lineId,
     }));
+  };
+
+  const handleViewCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dispatch(setCartOpen(false));
+    setTimeout(() => {
+      router.push('/cart');
+    }, 100);
+  };
+
+  const handleCheckout = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dispatch(setCartOpen(false));
+    setTimeout(() => {
+      router.push('/checkout');
+    }, 100);
   };
 
   const renderCartItem = (item: CartItem) => (
@@ -156,18 +174,18 @@ const ShoppingCart_Sidebar: React.FC<ShoppingCartProps> = ({ onClose }) => {
               <motion.button 
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onClose}
+                onClick={handleViewCart}
                 className="p-3 border-2 border-darkRed text-darkRed hover:bg-darkRed hover:text-white rounded-md text-center transition-all duration-300"
               >
-                <Link href="/cart">View cart</Link>
+                View cart
               </motion.button>
               <motion.button 
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onClose}
+                onClick={handleCheckout}
                 className="p-3 bg-darkRed text-white hover:bg-darkestRed rounded-md text-center transition-all duration-300 shadow-lg hover:shadow-xl"
               >
-                <Link href="/checkout">Checkout</Link>
+                Checkout
               </motion.button>
             </div>
           </div>

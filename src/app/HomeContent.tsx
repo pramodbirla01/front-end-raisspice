@@ -48,7 +48,7 @@ export default function HomeContent() {
   }
 
   return (
-    <ErrorBoundary>
+    // <ErrorBoundary>
       <main className="min-h-screen">
         <div>
           <HeroSection />
@@ -59,6 +59,6 @@ export default function HomeContent() {
           <TrustedBy />
         </div>
       </main>
-    </ErrorBoundary>
+    // </ErrorBoundary>
   );
 }

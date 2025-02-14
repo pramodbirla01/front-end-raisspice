@@ -1,9 +1,11 @@
 import { Models } from 'appwrite';
 
-export interface ProductCategory extends Models.Document {
+export interface ProductCategory {
+  $id: string;
   name: string;
   sub_text: string;
   description: string;
+  slug?: string;
 }
 
 export interface ProductCategoryState {

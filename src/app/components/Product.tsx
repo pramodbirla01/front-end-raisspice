@@ -101,16 +101,11 @@ const ProductComponent: React.FC<ProductComponentProps> = () => {
         process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
         [
           Query.limit(100),
-          Query.search('product_collection', collectionId)
+          Query.equal('product_collection', [collectionId]) // Changed from search to equal
         ]
       );
 
-      const filteredProducts = response.documents.filter((product: ProductDocument) => 
-        Array.isArray(product.product_collection) && 
-        product.product_collection.includes(collectionId)
-      ).slice(0, 4);
-
-      const mappedProducts = filteredProducts.map((product: ProductDocument) => ({
+      const mappedProducts = response.documents.map((product: ProductDocument) => ({
         $id: product.$id,
         name: product.name,
         description: product.description,
