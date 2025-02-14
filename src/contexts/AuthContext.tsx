@@ -9,15 +9,15 @@ import Cookies from 'js-cookie';
 interface AuthContextType {
   user: any | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  login: (email: string, password: string) => Promise<{ success: boolean; user: any }>;
+  logout: () => Promise<{ success: boolean }>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  login: async () => {},
-  logout: async () => {},
+  login: async () => ({ success: false, user: null }),
+  logout: async () => ({ success: false }),
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
