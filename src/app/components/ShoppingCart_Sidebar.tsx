@@ -41,9 +41,11 @@ const ShoppingCart_Sidebar: React.FC<ShoppingCartProps> = ({ onClose }) => {
 
   const updateQuantity = async (lineId: string, quantity: number) => {
     if (!cart) return;
+    // Enforce minimum quantity of 1
+    const newQuantity = Math.max(1, quantity);
     await dispatch(updateCartItem({
       lineId,
-      quantity,
+      quantity: newQuantity,
     }));
   };
 
@@ -98,8 +100,9 @@ const ShoppingCart_Sidebar: React.FC<ShoppingCartProps> = ({ onClose }) => {
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center border rounded">
             <button
-              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-              className="p-2"
+              onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+              className={`p-2 ${item.quantity <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              disabled={item.quantity <= 1}
             >
               <Minus className="h-4 w-4" />
             </button>

@@ -1,8 +1,23 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-// import { Product } from '@/types/product';
-import { Product } from '@/src/types/product';
+import { databases, Models } from '@/lib/appwrite';
+import { Query } from 'appwrite';
+import { getStorageFileUrl } from '@/lib/appwrite';
+
+interface ProductDocument extends Models.Document {
+  name: string;
+  description: string;
+  category: string[];
+  weight: number[];
+  image: string;
+  additionalImages?: string[];
+  stock: number;
+  product_collection: string[];
+  local_price: number[];
+  sale_price: number[];
+}
+
 interface SearchState {
-  searchResults: Product[];
+  searchResults: ProductDocument[];
   loading: boolean;
   error: string | null;
 }
@@ -15,17 +30,38 @@ const initialState: SearchState = {
 
 export const searchProducts = createAsyncThunk(
   'search/performSearch',
-  async ({ query }: { query: string }) => {
-    const baseUrl = process.env.NEXT_PUBLIC_STRAPI_BACKEND_URL;
-    if (!baseUrl) throw new Error('NEXT_PUBLIC_STRAPI_BACKEND_URL is not defined');
+  async (query: string) => {
+    try {
+      if (!query.trim()) return [];
 
-    const response = await fetch(
-      `${baseUrl}/api/products?filters[name][$containsi]=${query}&populate[Images]=true&populate[category]=true&populate[weights][populate][inventory]=true`
-    );
+      // Using string matching instead of fulltext index
+      const response = await (databases.listDocuments as (
+        databaseId: string,
+        collectionId: string,
+        queries?: string[]
+      ) => Promise<Models.DocumentList<ProductDocument>>)(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+        process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
+        [
+          Query.startsWith('name', query), // Changed from search to startsWith
+          Query.orderDesc('$createdAt'),
+          Query.limit(6)
+        ]
+      );
 
-    if (!response.ok) throw new Error('Search failed');
-    const data = await response.json();
-    return data.data;
+      // Also check for partial matches in the name
+      const results = response.documents.filter(doc => 
+        doc.name.toLowerCase().includes(query.toLowerCase())
+      );
+
+      return results.map(doc => ({
+        ...doc,
+        image: doc.image ? getStorageFileUrl(doc.image) : '/placeholder-image.jpg'
+      }));
+    } catch (error: any) {
+      console.error('Search error:', error);
+      throw new Error(error.message || 'Failed to search products');
+    }
   }
 );
 

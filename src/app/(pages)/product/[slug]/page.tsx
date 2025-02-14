@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { use } from 'react';
-import { databases } from "@/lib/appwrite";
+import { databases, Models } from "@/lib/appwrite"; // Add Models import
 import { Query } from "appwrite";
 import Single_Product_Main_Info from "../Single_Product_Main_Info";
 import Single_Product_Main_Img_Container from "../Single_Product_Main_Img_Container";
@@ -39,6 +39,11 @@ interface ProductData {
   sale_price: number[];
 }
 
+interface CategoryDocument extends Models.Document {
+  name: string;
+  description: string;
+}
+
 const ProductPage = ({ params }: ProductPageProps) => {
   const resolvedParams = use(params);
   const [product, setProduct] = useState<ProductData | null>(null);
@@ -55,7 +60,11 @@ const ProductPage = ({ params }: ProductPageProps) => {
       const categoryMap = new Map<string, string>();
       
       for (const id of categoryIds) {
-        const response = await databases.getDocument(
+        const response = await (databases.getDocument as (
+          databaseId: string,
+          collectionId: string,
+          documentId: string
+        ) => Promise<CategoryDocument>)(
           process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
           process.env.NEXT_PUBLIC_APPWRITE_CATEGORY_COLLECTION_ID!,
           id
@@ -75,7 +84,11 @@ const ProductPage = ({ params }: ProductPageProps) => {
         setLoading(true);
         console.log('Fetching product with ID:', resolvedParams.slug); // Debug log
 
-        const productResponse = await databases.getDocument(
+        const productResponse = await (databases.getDocument as (
+          databaseId: string,
+          collectionId: string,
+          documentId: string
+        ) => Promise<Models.Document>)(
           process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
           process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
           resolvedParams.slug // This should be the document ID
@@ -246,20 +259,22 @@ const ProductPage = ({ params }: ProductPageProps) => {
   );
 };
 
-const ProductPageWrapper = (props: ProductPageProps) => (
-  <ErrorBoundary
-    fallback={
-      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center">
-        <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
-        <p className="text-gray-600">
-          This product might be unavailable or doesn't exist.
-        </p>
-      </div>
-    }
-  >
-    <ProductPage {...props} />
-  </ErrorBoundary>
-);
+const ProductPageWrapper = (props: ProductPageProps) => {
+  const fallbackComponent = (
+    <div className="w-full min-h-[60vh] flex flex-col items-center justify-center">
+      <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
+      <p className="text-gray-600">
+        This product might be unavailable or doesn't exist.
+      </p>
+    </div>
+  );
+
+  return (
+    <ErrorBoundary fallback={fallbackComponent}>
+      <ProductPage {...props} />
+    </ErrorBoundary>
+  );
+};
 
 export default ProductPageWrapper;
 

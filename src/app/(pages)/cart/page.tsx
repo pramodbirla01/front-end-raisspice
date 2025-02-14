@@ -39,9 +39,11 @@ const ShoppingCartPage: React.FC = () => {
 
   const updateQuantity = async (lineId: string, quantity: number) => {
     if (!cart) return;
+    // Enforce minimum quantity of 1
+    const newQuantity = Math.max(1, quantity);
     await dispatch(updateCartItem({
       lineId,
-      quantity,
+      quantity: newQuantity,
     }));
   };
 
@@ -86,10 +88,12 @@ const ShoppingCartPage: React.FC = () => {
         <div className="flex sm:flex-col items-center gap-3 w-full sm:w-auto justify-between">
           <div className="flex items-center gap-3">
             <motion.button
-              onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}
-              className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+              className={`w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center transition-colors
+                ${item.quantity <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              whileHover={item.quantity > 1 ? { scale: 1.1 } : {}}
+              whileTap={item.quantity > 1 ? { scale: 0.9 } : {}}
+              disabled={item.quantity <= 1}
             >
               -
             </motion.button>

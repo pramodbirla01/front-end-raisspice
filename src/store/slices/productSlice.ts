@@ -49,19 +49,19 @@ export const fetchProducts = createAsyncThunk(
         Query.offset((page - 1) * pageSize)
       ];
 
-      // Fix: Use equal for exact matches on array fields
+      // Fix: Use array-contains for array fields
       if (params.categorySlug) {
         const categoryId = Array.isArray(params.categorySlug) 
           ? params.categorySlug[0] 
           : params.categorySlug;
-        queries.push(Query.equal('category', [categoryId]));
+        queries.push(Query.search('category', categoryId));
       }
 
       if (params.collection_id) {
         const collectionId = Array.isArray(params.collection_id) 
           ? params.collection_id[0] 
           : params.collection_id;
-        queries.push(Query.equal('product_collection', [collectionId]));
+        queries.push(Query.search('product_collection', collectionId));
       }
 
       // Add sorting if specified
