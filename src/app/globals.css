@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --bg-color : #f9f3e4;
+  --navbar_btn : #932b22;
+  --category_box_bg_color : 
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 255, 255, 255;
+}
+
+/* Remove @media (prefers-color-scheme: dark) block */
+
+
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+  font-family: 'Mohave', sans-serif;
+}
+
+/* Custom scrollbar styling */
+.overflow-x-auto {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer/Edge */
+  -webkit-overflow-scrolling: touch;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.3s ease-out;
+}
+
+@layer components {
+  .input-premium {
+    @apply w-full p-4 border border-gray-200 rounded-lg bg-gray-50/50 
+           focus:bg-white focus:border-darkRed focus:ring-2 focus:ring-darkRed/10 
+           transition-all duration-300 outline-none shadow-inner-glow;
+  }
+
+  .btn-premium {
+    @apply relative overflow-hidden bg-gradient-to-r from-darkRed to-darkestRed 
+           hover:from-darkestRed hover:to-darkRed text-white rounded-lg 
+           transition-all duration-300 shadow-lg hover:shadow-xl 
+           active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed;
+  }
+
+  .btn-premium::after {
+    @apply content-[''] absolute top-0 -left-[100%] w-full h-full 
+           bg-shimmer opacity-50 transition-all duration-700;
+  }
+
+  .btn-premium:hover::after {
+    @apply left-[100%];
+  }
+}

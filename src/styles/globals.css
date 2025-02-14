@@ -1,0 +1,29 @@
+@keyframes dissolve {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes dissolveText {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+.animate-dissolve {
+  animation: dissolve 0.8s ease-out forwards;
+}
+
+.animate-dissolve-delayed {
+  animation: dissolve 0.8s ease-out 0.2s forwards;
+}
+
+.animate-dissolve-text {
+  animation: dissolveText 0.5s ease-out forwards;
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+.animate-pulse-delayed {
+  animation: pulse 2s infinite 0.5s;
+}
