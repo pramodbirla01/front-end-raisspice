@@ -41,7 +41,7 @@ export const fetchProducts = createAsyncThunk(
   'products/fetchAll',
   async (params: ProductFetchParams = {}) => {
     try {
-      const pageSize = params.pageSize || 12; // Use consistent page size
+      const pageSize = params.pageSize || 12;
       const page = params.page || 1;
 
       const queries = [
@@ -49,29 +49,7 @@ export const fetchProducts = createAsyncThunk(
         Query.offset((page - 1) * pageSize)
       ];
 
-      // Fix: Use array-contains for array fields
-      if (params.categorySlug) {
-        const categoryId = Array.isArray(params.categorySlug) 
-          ? params.categorySlug[0] 
-          : params.categorySlug;
-        queries.push(Query.search('category', categoryId));
-      }
-
-      if (params.collection_id) {
-        const collectionId = Array.isArray(params.collection_id) 
-          ? params.collection_id[0] 
-          : params.collection_id;
-        queries.push(Query.search('product_collection', collectionId));
-      }
-
-      // Add sorting if specified
-      if (params.sort) {
-        const [field, order] = params.sort.split(':');
-        queries.push(order === 'asc' ? Query.orderAsc(field) : Query.orderDesc(field));
-      }
-
-      console.log('Query parameters:', queries);
-
+      // For array fields, we'll fetch all and filter in memory
       const response = await (databases.listDocuments as (
         databaseId: string,
         collectionId: string,
@@ -82,14 +60,33 @@ export const fetchProducts = createAsyncThunk(
         queries
       );
 
-      // Rest of your existing mapping code...
-      const products = response.documents.map((doc) => ({
+      // Filter results in memory based on category and collection
+      let filteredDocs = response.documents;
+
+      if (params.categorySlug) {
+        const categoryId = Array.isArray(params.categorySlug) 
+          ? params.categorySlug[0] 
+          : params.categorySlug;
+        filteredDocs = filteredDocs.filter(doc => 
+          doc.category.includes(categoryId)
+        );
+      }
+
+      if (params.collection_id) {
+        const collectionId = Array.isArray(params.collection_id) 
+          ? params.collection_id[0] 
+          : params.collection_id;
+        filteredDocs = filteredDocs.filter(doc => 
+          doc.product_collection.includes(collectionId)
+        );
+      }
+
+      const products = filteredDocs.map((doc) => ({
         $id: doc.$id,
         name: doc.name,
         description: doc.description,
         category: doc.category || [],
         weight: doc.weight || [],
-        // Ensure image URLs are properly formed
         image: doc.image ? getStorageFileUrl(doc.image) : '/placeholder-image.jpg',
         additionalImages: Array.isArray(doc.additionalImages) 
           ? doc.additionalImages.map((imgId: string) => getStorageFileUrl(imgId))
@@ -106,8 +103,8 @@ export const fetchProducts = createAsyncThunk(
           pagination: {
             page: page,
             pageSize: pageSize,
-            pageCount: Math.ceil(response.total / pageSize),
-            total: response.total
+            pageCount: Math.ceil(filteredDocs.length / pageSize),
+            total: filteredDocs.length
           }
         }
       };

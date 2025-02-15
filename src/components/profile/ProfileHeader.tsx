@@ -30,21 +30,35 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ customer }) => {
       .toUpperCase();
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
+  // Updated date formatting function
+  const formatMemberSince = (date?: Date | string): string => {
+    if (!date) return 'Not available';
+    
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      // Handle both string and Date inputs
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      
+      // Validate the date
+      if (isNaN(dateObj.getTime())) {
+        throw new Error('Invalid date');
+      }
+
+      return new Intl.DateTimeFormat('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
-      });
+      }).format(dateObj);
     } catch (error) {
-      return 'Date not available';
+      console.error('Date formatting error:', error);
+      // Try fallback to $createdAt if available
+      return customer.$createdAt ? 
+        formatMemberSince(customer.$createdAt) : 
+        'Not available';
     }
   };
 
   const userInitials = customer.full_name ? getInitials(customer.full_name) : '??';
-  const memberSince = formatDate(customer.created_at);
+  const memberSince = formatMemberSince(customer.created_at);
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-r from-red-800 via-red-700 to-premium-800 rounded-xl p-4 sm:p-6 lg:p-8 text-white">
@@ -60,8 +74,8 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ customer }) => {
                 {customer.full_name || 'Name Not Set'}
               </h1>
               <p className="text-white/80 text-sm sm:text-base truncate">{customer.email}</p>
-              <p className="text-sm text-gray-500">
-                Member Since {memberSince}
+              <p className="text-white/60 text-sm">
+                Member Since: {memberSince}
               </p>
             </div>
           </div>

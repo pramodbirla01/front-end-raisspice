@@ -3,9 +3,6 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useDispatch, useSelector } from 'react-redux';
-import { registerCustomer } from '@/store/slices/customerSlice';
-import { AppDispatch, RootState } from '@/store/store';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '@/components/auth/AuthGuard';
 
@@ -16,10 +13,8 @@ interface SignupFormData {
   confirmPassword: string;
 }
 
-const SignupPage = () => {
-  const dispatch = useDispatch<AppDispatch>();
+export default function Register() {
   const router = useRouter();
-  const { loading, error } = useSelector((state: RootState) => state.customer);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationError, setValidationError] = useState<string>('');
@@ -29,37 +24,57 @@ const SignupPage = () => {
     password: "",
     confirmPassword: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     setValidationError('');
-    
+
     if (formData.password !== formData.confirmPassword) {
       setValidationError("Passwords don't match");
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setValidationError("Password must be at least 6 characters long");
+      setIsLoading(false);
       return;
     }
 
     try {
-      console.log('Submitting registration form...');
-      const result = await dispatch(registerCustomer({
-        email: formData.email,
-        password: formData.password,
-        full_name: formData.full_name,
-      })).unwrap();
-      
-      if (result.token) {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: formData.full_name,
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      if (data.success && data.token) {
+        // Store the token in localStorage
+        localStorage.setItem('token', data.token);
+        
+        // You might want to update your Redux store here if you're using it
+        // await dispatch(loginUser(data));
+        
         console.log('Registration successful, redirecting to profile...');
         router.push('/profile');
+      } else {
+        throw new Error(data.message || 'Registration failed');
       }
+
     } catch (err: any) {
-      const errorMessage = err.message || 'Registration failed. Please try again.';
-      console.error('Registration error:', errorMessage);
-      setValidationError(errorMessage);
+      console.error('Registration error:', err);
+      setValidationError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -189,14 +204,13 @@ const SignupPage = () => {
               </div>
 
               {validationError && <div className="text-red-500 text-center">{validationError}</div>}
-              {error && error !== 'No token found' && <div className="text-red-500 text-center">{error}</div>}
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isLoading}
                 className="w-full flex justify-center p-3 border-none rounded-md shadow-sm text-sm font-medium text-white bg-red-800 hover:bg-black disabled:bg-gray-400"
               >
-                {loading ? 'Creating Account...' : 'Sign Up'}
+                {isLoading ? 'Creating Account...' : 'Sign Up'}
               </button>
             </div>
           </form>
@@ -204,6 +218,4 @@ const SignupPage = () => {
       </div>
     </AuthGuard>
   );
-};
-
-export default SignupPage;
+}

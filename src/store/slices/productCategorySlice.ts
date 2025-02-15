@@ -29,7 +29,7 @@ export const fetchProductCategories = createAsyncThunk(
         [Query.limit(100)]
       );
 
-      console.log('Raw category data:', response.documents);
+      
 
       return response.documents.map(doc => ({
         $id: doc.$id,

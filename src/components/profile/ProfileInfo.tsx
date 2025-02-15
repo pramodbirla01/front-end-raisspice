@@ -6,10 +6,18 @@ interface ProfileInfoProps {
 }
 
 const ProfileInfo: React.FC<ProfileInfoProps> = ({ customer }) => {
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'Not available';
+  const formatDate = (dateInput: string | Date | undefined): string => {
+    if (!dateInput) return 'Not available';
+    
     try {
-      const date = new Date(dateString);
+      // Handle both string and Date inputs
+      const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+      
+      // Validate the date
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid date');
+      }
+
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -17,9 +25,17 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ customer }) => {
       });
     } catch (error) {
       console.error('Date parsing error:', error);
-      return 'Invalid Date';
+      // Try fallback to $createdAt if available
+      return customer.$createdAt ? 
+        formatDate(customer.$createdAt) : 
+        'Not available';
     }
   };
+
+  // Convert the Date object to ISO string if it's a Date, or use it directly if it's already a string
+  const createdAtString = customer.created_at instanceof Date 
+    ? customer.created_at.toISOString() 
+    : customer.created_at;
 
   return (
     <div className="space-y-6 bg-white p-6 rounded-lg shadow-sm">
@@ -43,16 +59,9 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ customer }) => {
         <div>
           <h3 className="text-sm font-medium text-gray-500">Member Since</h3>
           <p className="mt-1 text-lg">
-            {formatDate(customer.created_at)}
+            {formatDate(createdAtString)}
           </p>
         </div>
-
-        {/* {customer.phone && (
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Phone</h3>
-            <p className="mt-1 text-lg">{customer.phone}</p>
-          </div>
-        )} */}
       </div>
     </div>
   );

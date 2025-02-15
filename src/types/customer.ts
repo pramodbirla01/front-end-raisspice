@@ -38,9 +38,13 @@ export interface AddressData {
 
 export interface Customer {
   id: string;
-  email: string;
   full_name: string;
-  created_at: string;
-  address: string[]; // Changed from addresses to address
-  orders?: any[]; // Optional orders array
+  email: string;
+  role: boolean;
+  email_verified: boolean;
+  created_at: string | Date;  // Allow both string and Date type
+  $createdAt?: string;
+  last_login?: string;
+  address: string[];
+  orders?: any[];
 }

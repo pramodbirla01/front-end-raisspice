@@ -20,7 +20,7 @@ const setAuthToken = (token: string, rememberMe: boolean = false) => {
   const cookieOptions = {
     path: '/',
     sameSite: 'strict' as const,
-    expires: rememberMe ? 30 : undefined // 30 days if remember me, session cookie if not
+    expires: rememberMe ? 30 : 1 // 30 days if remember me, session cookie if not
   };
   
   Cookies.set(TOKEN_COOKIE_NAME, token, cookieOptions);

@@ -1,11 +1,14 @@
-import { Client, Databases, ID, Query } from "appwrite";
+import { Client, Databases, ID, Query } from "node-appwrite";
 
 let client;
 let databases;
 
 if (typeof window === 'undefined') {
   // Server-side initialization
-  client = new Client()
+  client = new Client();
+  
+  // Make sure to set all required parameters
+  client
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
     .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID)
     .setKey(process.env.APPWRITE_API_KEY);
@@ -20,4 +23,4 @@ if (typeof window === 'undefined') {
   databases = new Databases(client);
 }
 
-export { databases, ID, Query };
+export { client, databases, ID, Query };

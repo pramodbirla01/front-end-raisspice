@@ -94,7 +94,7 @@ const Category = () => {
     return <div className="w-full h-40 flex items-center justify-center text-red-500">{error}</div>;
   }
 
-  console.log('Rendering categories:', categories);
+  
 
   return (
     <div ref={ref} id='category_section' className='w-full bg-gradient-to-br from-amber-50/80 to-white relative overflow-hidden'>

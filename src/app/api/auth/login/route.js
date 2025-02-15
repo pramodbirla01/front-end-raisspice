@@ -1,15 +1,12 @@
+import { NextResponse } from 'next/server';
 import { databases, Query } from "../../lib/appwrite";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { email, password, rememberMe } = await req.json();
+    const { email, password } = await req.json();
 
-    console.log('Login attempt for:', email);
-
-    // Input validation
     if (!email || !password) {
       return NextResponse.json(
         { message: "Email and password are required" },
@@ -17,7 +14,6 @@ export async function POST(req) {
       );
     }
 
-    // Query user by email
     const userList = await databases.listDocuments(
       process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
       process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID,
@@ -32,9 +28,8 @@ export async function POST(req) {
     }
 
     const user = userList.documents[0];
-
-    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password);
+
     if (!isValidPassword) {
       return NextResponse.json(
         { message: "Invalid credentials" },
@@ -43,48 +38,49 @@ export async function POST(req) {
     }
 
     // Update last login timestamp
-    await databases.updateDocument(
-      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
-      process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID,
-      user.$id,
-      { 
-        last_login: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
-    );
+    try {
+      await databases.updateDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
+        process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID,
+        user.$id,
+        { last_login: new Date().toISOString() }
+      );
+    } catch (updateError) {
+      console.error("Error updating last login:", updateError);
+      // Continue with login even if update fails
+    }
 
-    // Generate JWT token with expiration based on rememberMe
-    const expiresIn = rememberMe ? '30d' : '24h';
     const token = jwt.sign(
       {
         userId: user.$id,
         email: user.email,
-        full_name: user.full_name,
         role: user.role
       },
       process.env.JWT_SECRET,
-      { expiresIn }
+      { expiresIn: '720h' }
     );
 
-    // Return user data (excluding sensitive information)
     return NextResponse.json({
+      success: true,
       message: "Login successful",
       token,
       user: {
         id: user.$id,
         email: user.email,
         full_name: user.full_name,
-        email_verified: user.email_verified,
         role: user.role,
-        created_at: user.created_at
+        email_verified: user.email_verified,
+        created_at: user.created_at || user.$createdAt, // Add this line to include creation date
+        last_login: user.last_login
       }
     });
 
   } catch (error) {
     console.error("Login error:", error);
-    return NextResponse.json({ 
-      message: "Login failed", 
-      error: error.message 
+    return NextResponse.json({
+      success: false,
+      message: "Login failed",
+      error: error.message
     }, { status: 500 });
   }
 }

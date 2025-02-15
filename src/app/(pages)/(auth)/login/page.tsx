@@ -31,15 +31,35 @@ const LoginPageContent: React.FC = () => {
         e.preventDefault();
         try {
             console.log('Attempting login...', { ...formData });
-            const result = await dispatch(loginCustomer({
-                email: formData.email,
-                password: formData.password,
-                rememberMe: formData.rememberMe
-            })).unwrap();
-            
-            if (result.token) {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            if (data.success && data.token) {
+                // Dispatch login action
+                await dispatch(loginCustomer({
+                    email: formData.email,
+                    password: formData.password,
+                    rememberMe: formData.rememberMe
+                })).unwrap();
+                
                 console.log('Login successful, redirecting to profile...');
                 router.push('/profile');
+            } else {
+                throw new Error(data.message || 'Login failed');
             }
         } catch (err: any) {
             console.error('Login error:', err);
