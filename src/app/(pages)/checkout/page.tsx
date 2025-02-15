@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../store/store';
 import AddressSelector from '@/components/checkout/AddressSelector';
+import ClientOnly from '@/components/ClientOnly';
 
-interface BuyNowProduct {
+interface CheckoutProduct {
   id: string;
   name: string;
   thumbnail: string;
@@ -21,8 +22,9 @@ interface BuyNowProduct {
   };
 }
 
-interface BuyNowData {
-  product: BuyNowProduct;
+interface CheckoutData {
+  mode: 'buyNow' | 'cart';
+  products: CheckoutProduct[];
 }
 
 interface Address {
@@ -41,7 +43,8 @@ const CheckoutPage = () => {
     const mode = searchParams.get('mode');
     const router = useRouter();
     const { currentCustomer, token } = useSelector((state: RootState) => state.customer);
-    const [buyNowData, setBuyNowData] = useState<BuyNowData | null>(null);
+    const { cart } = useSelector((state: RootState) => state.cart);
+    const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [email, setEmail] = useState<string>('');
@@ -84,40 +87,47 @@ const CheckoutPage = () => {
                         return;
                     }
 
-                    if (mode !== 'buyNow') {
-                        router.push('/shop');
-                        return;
-                    }
+                    if (mode === 'buyNow') {
+                        // Handle Buy Now checkout
+                        const storedData = localStorage.getItem('buyNowData');
+                        if (!storedData) throw new Error('No checkout data found');
 
-                    const storedData = localStorage.getItem('buyNowData');
-                    if (!storedData) {
-                        console.error('No stored data found');
-                        router.push('/shop');
-                        return;
-                    }
-
-                    try {
                         const parsed = JSON.parse(storedData);
-                        console.log('Successfully parsed data:', parsed);
-
-                        if (!parsed?.product?.name || !parsed?.product?.thumbnail) {
-                            throw new Error('Invalid product data structure');
+                        setCheckoutData({
+                            mode: 'buyNow',
+                            products: [parsed.product]
+                        });
+                    } 
+                    else if (mode === 'cart') {
+                        // Handle Cart checkout
+                        if (!cart?.items?.length) {
+                            router.push('/cart');
+                            return;
                         }
 
-                        setBuyNowData(parsed);
-                        setLoading(false);
+                        const cartProducts = cart.items.map(item => ({
+                            id: item.documentId,
+                            name: item.name,
+                            thumbnail: item.thumbnail,
+                            category: [item.category.$id],
+                            quantity: item.quantity,
+                            selectedVariant: {
+                                id: item.id,
+                                title: item.weight.weight_Value,
+                                sale_price: item.weight.sale_Price,
+                                original_price: item.weight.original_Price
+                            }
+                        }));
 
-                        if (currentCustomer?.email) {
-                            setEmail(currentCustomer.email);
-                        }
-
-                        if (currentCustomer?.address) {
-                            setAddresses(currentCustomer.address);
-                        }
-                    } catch (parseError) {
-                        console.error('Parse error:', parseError);
+                        setCheckoutData({
+                            mode: 'cart',
+                            products: cartProducts
+                        });
+                    } else {
                         router.push('/shop');
                     }
+
+                    setLoading(false);
                 } catch (error) {
                     console.error('Checkout error:', error);
                     setError(error instanceof Error ? error.message : 'Failed to initialize checkout');
@@ -127,12 +137,12 @@ const CheckoutPage = () => {
 
             initializeCheckout();
         }
-    }, [token, mode, router, currentCustomer]);
+    }, [token, mode, router, cart, currentCustomer]);
 
     useEffect(() => {
-        console.log('Current buyNowData:', buyNowData);
+        console.log('Current checkoutData:', checkoutData);
         console.log('Loading state:', loading);
-    }, [buyNowData, loading]);
+    }, [checkoutData, loading]);
 
     useEffect(() => {
         if (currentCustomer) {
@@ -147,16 +157,12 @@ const CheckoutPage = () => {
     }, [currentCustomer]);
 
     const calculateTotals = () => {
-        if (!buyNowData) return { 
-            original: 0,
-            sale: 0
-        };
+        if (!checkoutData?.products) return { original: 0, sale: 0 };
         
-        const { product } = buyNowData;
-        return {
-            original: product.selectedVariant.original_price * product.quantity,
-            sale: product.selectedVariant.sale_price * product.quantity
-        };
+        return checkoutData.products.reduce((totals, product) => ({
+            original: totals.original + (product.selectedVariant.original_price * product.quantity),
+            sale: totals.sale + (product.selectedVariant.sale_price * product.quantity)
+        }), { original: 0, sale: 0 });
     };
 
     const handlePaymentSubmit = async () => {
@@ -208,7 +214,7 @@ const CheckoutPage = () => {
         );
     }
 
-    if (error || !buyNowData?.product) {
+    if (error || !checkoutData?.products) {
         return (
             <div className="min-h-screen bg-gradient-to-b from-bgColor to-lightBgColor py-12 flex items-center justify-center">
                 <div className="text-center">
@@ -277,46 +283,48 @@ const CheckoutPage = () => {
                         <div className="bg-white p-8 rounded-2xl shadow-premium sticky top-24">
                             <h2 className="text-2xl font-semibold mb-6">Order Summary</h2>
                             <div className="space-y-4">
-                                <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
-                                    <div className="h-20 w-20 bg-white rounded-lg overflow-hidden">
-                                        <img 
-                                            src={buyNowData.product.thumbnail} 
-                                            alt={buyNowData.product.name} 
-                                            className="w-full h-full object-cover" 
-                                        />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-medium">{buyNowData.product.name}</p>
-                                        <p className="text-sm text-gray-600">
-                                            {buyNowData.product.selectedVariant.title}g
-                                        </p>
-                                        <div className="mt-1">
-                                            <span className="text-darkRed font-medium">
-                                                ₹{buyNowData.product.selectedVariant.sale_price}
-                                            </span>
-                                            {buyNowData.product.selectedVariant.original_price > buyNowData.product.selectedVariant.sale_price && (
-                                                <span className="ml-2 text-sm text-gray-500 line-through">
-                                                    ₹{buyNowData.product.selectedVariant.original_price}
+                                {checkoutData?.products.map((product) => (
+                                    <div key={`${product.id}-${product.selectedVariant.id}`} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
+                                        <div className="h-20 w-20 bg-white rounded-lg overflow-hidden">
+                                            <img 
+                                                src={product.thumbnail} 
+                                                alt={product.name} 
+                                                className="w-full h-full object-cover" 
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-medium">{product.name}</p>
+                                            <p className="text-sm text-gray-600">
+                                                {product.selectedVariant.title}g
+                                            </p>
+                                            <div className="mt-1">
+                                                <span className="text-darkRed font-medium">
+                                                    ₹{product.selectedVariant.sale_price}
                                                 </span>
-                                            )}
+                                                {product.selectedVariant.original_price > product.selectedVariant.sale_price && (
+                                                    <span className="ml-2 text-sm text-gray-500 line-through">
+                                                        ₹{product.selectedVariant.original_price}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-gray-500">
+                                            x{product.quantity}
                                         </div>
                                     </div>
-                                    <div className="text-sm text-gray-500">
-                                        x{buyNowData.product.quantity}
-                                    </div>
-                                </div>
-                            </div>
+                                ))}
 
-                            <div className="mt-6 space-y-4 border-t pt-6">
-                                {calculateTotals().original > calculateTotals().sale && (
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Original Price</span>
-                                        <span className="line-through">₹{calculateTotals().original}</span>
+                                <div className="mt-6 space-y-4 border-t pt-6">
+                                    {calculateTotals().original > calculateTotals().sale && (
+                                        <div className="flex justify-between text-gray-600">
+                                            <span>Original Price</span>
+                                            <span className="line-through">₹{calculateTotals().original}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between font-bold text-xl">
+                                        <span>Total</span>
+                                        <span>₹{calculateTotals().sale}</span>
                                     </div>
-                                )}
-                                <div className="flex justify-between font-bold text-xl">
-                                    <span>Total</span>
-                                    <span>₹{calculateTotals().sale}</span>
                                 </div>
                             </div>
                         </div>
@@ -327,4 +335,10 @@ const CheckoutPage = () => {
     );
 };
 
-export default CheckoutPage;
+export default function CheckoutPageWrapper() {
+    return (
+        <ClientOnly>
+            <CheckoutPage />
+        </ClientOnly>
+    );
+}

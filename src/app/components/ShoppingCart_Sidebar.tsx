@@ -64,11 +64,18 @@ const ShoppingCart_Sidebar: React.FC<ShoppingCartProps> = ({ onClose }) => {
     }, 100);
   };
 
-  const handleCheckout = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleCheckout = () => {
+    if (!cart?.items?.length) {
+      // Show error or notification if cart is empty
+      return;
+    }
+    
+    // Close the cart sidebar
     dispatch(setCartOpen(false));
+    
+    // Navigate to checkout with cart mode
     setTimeout(() => {
-      router.push('/checkout');
+      router.push('/checkout?mode=cart');
     }, 100);
   };
 
@@ -186,7 +193,8 @@ const ShoppingCart_Sidebar: React.FC<ShoppingCartProps> = ({ onClose }) => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleCheckout}
-                className="p-3 bg-darkRed text-white hover:bg-darkestRed rounded-md text-center transition-all duration-300 shadow-lg hover:shadow-xl"
+                className="p-3 bg-darkRed text-white hover:bg-darkestRed rounded-md text-center transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!cart?.items?.length}
               >
                 Checkout
               </motion.button>

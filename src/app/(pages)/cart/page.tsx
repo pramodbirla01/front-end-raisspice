@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../../store/store';
 import { fetchCart, updateCartItem, removeCartItem } from '../../../store/slices/cartSlice';
 import { CartItem } from '../../../types/cart';
+import { useRouter } from 'next/navigation'; // Changed from 'next/router' to 'next/navigation'
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -30,6 +31,7 @@ const itemVariants = {
 const ShoppingCartPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { cart, loading } = useSelector((state: RootState) => state.cart);
+  const router = useRouter(); // This will now use the App Router
 
   useEffect(() => {
     dispatch(fetchCart()).catch(() => {
@@ -52,6 +54,11 @@ const ShoppingCartPage: React.FC = () => {
     await dispatch(removeCartItem({
       lineId,
     }));
+  };
+
+  const handleCheckout = () => {
+    if (!cart?.items?.length) return;
+    router.push('/checkout?mode=cart');
   };
 
   const renderCartItem = (item: CartItem) => (
@@ -169,15 +176,14 @@ const ShoppingCartPage: React.FC = () => {
                 <span>₹ {cart?.total || 0}</span>
               </motion.div>
               <p className="text-gray-500">Shipping calculated at checkout.</p>
-              <Link href="/checkout">
-                <motion.button
-                  className="w-full bg-gradient-to-r from-darkRed to-darkestRed hover:from-darkestRed hover:to-darkRed text-white py-4 px-6 rounded-lg transition-all duration-300 text-lg font-medium shadow-lg hover:shadow-xl"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Proceed to Checkout
-                </motion.button>
-              </Link>
+              <motion.button
+                onClick={handleCheckout}
+                className="w-full bg-darkRed text-white py-4 rounded-lg"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Proceed to Checkout
+              </motion.button>
             </div>
           </motion.div>
         </div>
