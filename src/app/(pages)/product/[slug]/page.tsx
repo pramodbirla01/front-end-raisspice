@@ -201,7 +201,7 @@ const ProductPage = ({ params }: ProductPageProps) => {
       <div className="w-full min-h-[60vh] flex flex-col items-center justify-center">
         <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
         <p className="text-gray-600">
-          {error || "This product might be unavailable or doesn't exist."}
+          {error || "Sorry, we couldn't find this product. Please check the URL or try again later."}
         </p>
       </div>
     );
