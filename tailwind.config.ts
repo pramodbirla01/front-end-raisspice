@@ -106,8 +106,8 @@ export default {
           '100%': { transform: 'translateX(-50%)' },
         },
         colorPulse: {
-          '0%, 100%': { opacity: 1 },
-          '50%': { opacity: 0.7 },
+          '0%, 100%': { opacity: '1' },  // Changed from 1 to '1'
+          '50%': { opacity: '0.7' },     // Changed from 0.7 to '0.7'
         },
       },
       boxShadow: {
