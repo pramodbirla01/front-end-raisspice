@@ -36,15 +36,16 @@ export async function POST(request: Request) {
             ID.unique(),
             {
                 ...orderData,
+                payment_type: 'ONLINE',
+                payment_status: 'completed', // Set as completed since payment is verified
+                status: 'confirmed',
+                shipping_status: 'processing', // Initial shipping status
                 razorpay_order_id,
                 razorpay_payment_id,
                 razorpay_signature,
-                payment_status: 'completed',
-                status: 'confirmed',
-                shipping_status: 'processing',
                 total_price: Number(amount),
                 payment_amount: Number(amount),
-                created_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
             } as any
         );
 

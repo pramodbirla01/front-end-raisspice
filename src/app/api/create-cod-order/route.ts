@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { databases } from '@/lib/appwrite';
 import { getTokenFromRequest, verifyToken } from '@/middleware/auth';
+import { ID } from 'appwrite';
 
 export async function POST(request: NextRequest) {
     try {
@@ -25,9 +26,16 @@ export async function POST(request: NextRequest) {
 
         const createdOrder = await (databases.createDocument as any)(
             process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
-            process.env.NEXT_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID,
-            'unique()',
-            orderDataWithIntegers
+            process.env.NEXT_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID!,
+            ID.unique(),
+            {
+                ...orderDataWithIntegers,
+                payment_type: 'COD',
+                payment_status: 'pending',
+                status: 'confirmed',
+                shipping_status: 'processing',
+                created_at: new Date().toISOString()
+            } as any
         );
 
         console.log('Order created:', createdOrder); // Debug log
