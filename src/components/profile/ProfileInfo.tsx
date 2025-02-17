@@ -26,16 +26,14 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({ customer }) => {
     } catch (error) {
       console.error('Date parsing error:', error);
       // Try fallback to $createdAt if available
-      return customer.$createdAt ? 
-        formatDate(customer.$createdAt) : 
+      return customer.created_at ? 
+        formatDate(customer.created_at) : 
         'Not available';
     }
   };
 
-  // Convert the Date object to ISO string if it's a Date, or use it directly if it's already a string
-  const createdAtString = customer.created_at instanceof Date 
-    ? customer.created_at.toISOString() 
-    : customer.created_at;
+  // Remove instanceof check since created_at is always a string
+  const createdAtString = customer.created_at;
 
   return (
     <div className="space-y-6 bg-white p-6 rounded-lg shadow-sm">

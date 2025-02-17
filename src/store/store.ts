@@ -8,6 +8,7 @@ import customerReducer from './slices/customerSlice'
 import searchReducer from './slices/searchSlice'
 import heroSectionReducer from './slices/heroSectionSlice'
 import categoryReducer from './slices/categorySlice'
+import ordersReducer from './slices/orderSlice'
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     customer: customerReducer,
     search: searchReducer,
     heroSection: heroSectionReducer,
+    orders: ordersReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

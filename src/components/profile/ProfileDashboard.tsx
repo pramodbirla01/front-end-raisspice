@@ -1,38 +1,27 @@
-import { Customer } from '@/types/customer';
-import { Order } from '@/types/order';
-import { formatCurrency } from '@/utils/formatCurrency';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-
-interface ProfileDashboardProps {
-  customer: Customer;
-  orders: Order[];
-}
-
-const getMemberStatus = (totalSpent: number) => {
-  if (totalSpent >= 25000) return 'Premium';
-  if (totalSpent >= 10000) return 'Gold';
-  if (totalSpent >= 5000) return 'Silver';
-  return 'Regular';
-};
-
-const getNextTier = (totalSpent: number) => {
-  if (totalSpent >= 25000) return null;
-  if (totalSpent >= 10000) return { name: 'Premium', target: 25000 };
-  if (totalSpent >= 5000) return { name: 'Gold', target: 10000 };
-  return { name: 'Silver', target: 5000 };
-};
+import { formatCurrency } from '@/utils/formatCurrency';
+import { Order } from '@/types/order';
 
 export default function ProfileDashboard() {
-  const { currentCustomer } = useSelector((state: RootState) => state.customer);
+  const { allOrders } = useSelector((state: RootState) => state.orders);
+  const totalSpent = allOrders.reduce((sum: number, order: Order) => sum + order.total_price, 0);
+  const orderCount = allOrders.length;
 
-  const calculateTotalAmount = (orders: Order[] = []) => {
-    return orders.reduce((total, order) => total + order.total_price, 0);
+  const getMemberStatus = (spent: number) => {
+    if (spent >= 25000) return 'Premium';
+    if (spent >= 10000) return 'Gold';
+    if (spent >= 5000) return 'Silver';
+    return 'Regular';
   };
 
-  // Fix: Use optional chaining with nullish coalescing
-  const totalSpent = calculateTotalAmount(currentCustomer?.orders ?? []);
-  const orderCount = currentCustomer?.orders?.length ?? 0;
+  const getNextTier = (spent: number) => {
+    if (spent >= 25000) return null;
+    if (spent >= 10000) return { name: 'Premium', target: 25000 };
+    if (spent >= 5000) return { name: 'Gold', target: 10000 };
+    return { name: 'Silver', target: 5000 };
+  };
+
   const memberStatus = getMemberStatus(totalSpent);
   const nextTier = getNextTier(totalSpent);
   

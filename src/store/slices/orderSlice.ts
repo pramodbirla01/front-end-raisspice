@@ -1,130 +1,121 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { OrderState, Address } from '../../types/order';
+import { OrderState, OrdersState, Order } from '@/types/order';
+import { databases } from '@/lib/appwrite';
+import { Query, Models } from 'appwrite';
 
-const initialState: OrderState = {
+const ordersInitialState: OrdersState = {
+  orders: [],
+  allOrders: [], // Now TypeScript knows about this property
   loading: false,
   error: null,
-  order: null,
-  shippingOptions: [],
-  paymentProviders: [],
+  currentPage: 1,
+  totalPages: 1,
+  totalOrders: 0
 };
 
-export const updateCartEmail = createAsyncThunk(
-  'order/updateEmail',
-  async ({ cartId, email }: { cartId: string; email: string }) => {
-    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const response = await fetch(`${backendUrl}/store/carts/${cartId}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || 'temp',
-      },
-      body: JSON.stringify({ email }),
-    });
-    const data = await response.json();
-    return data.cart;
-  }
-);
+const ORDERS_PER_PAGE = 10;
 
-export const updateCartAddresses = createAsyncThunk(
-  'order/updateAddresses',
-  async ({ cartId, address }: { cartId: string; address: Address }) => {
-    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const response = await fetch(`${backendUrl}/store/carts/${cartId}`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || 'temp',
-      },
-      body: JSON.stringify({
-        shipping_address: address,
-        billing_address: address,
-      }),
-    });
-    const data = await response.json();
-    return data.cart;
-  }
-);
+interface OrderDocument extends Models.Document {
+  user_id: string;
+  status: string;
+  total_price: number;
+  payment_type: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  phone_number: string;
+  $createdAt: string;
+}
 
-export const fetchShippingOptions = createAsyncThunk(
-  'order/fetchShippingOptions',
-  async (cartId: string) => {
-    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const response = await fetch(`${backendUrl}/store/shipping-options?cart_id=${cartId}`, {
-      credentials: 'include',
-      headers: {
-        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || 'temp',
-      },
-    });
-    const data = await response.json();
-    return data.shipping_options;
-  }
-);
+export const fetchUserOrders = createAsyncThunk(
+  'orders/fetchUserOrders',
+  async ({ userId, page = 1 }: { userId: string; page?: number }) => {
+    try {
+      // Get all orders in a single query to get accurate count
+      const response = await (databases.listDocuments as any)(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+        process.env.NEXT_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID!,
+        [
+          Query.equal('user_id', userId),
+          Query.orderDesc('$createdAt'),
+          Query.limit(100) // Increase limit to get all orders
+        ]
+      );
 
-export const addShippingMethod = createAsyncThunk(
-  'order/addShippingMethod',
-  async ({ cartId, optionId }: { cartId: string; optionId: string }) => {
-    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const response = await fetch(`${backendUrl}/store/carts/${cartId}/shipping-methods`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || 'temp',
-      },
-      body: JSON.stringify({ option_id: optionId }),
-    });
-    const data = await response.json();
-    return data.cart;
-  }
-);
+      console.log('Total orders found:', response.documents.length);
 
-export const completeCart = createAsyncThunk(
-  'order/complete',
-  async (cartId: string) => {
-    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
-    const response = await fetch(`${backendUrl}/store/carts/${cartId}/complete`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'x-publishable-api-key': process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || 'temp',
-      },
-    });
-    const data = await response.json();
-    
-    if (data.type === 'order') {
-      localStorage.removeItem('cart_id');
-      return data.order;
+      // Process all orders
+      const allOrders = response.documents.map((doc: Models.Document) => ({
+        $id: doc.$id,
+        user_id: doc.user_id,
+        status: doc.status || 'pending',
+        total_price: Number(doc.total_price) || 0,
+        payment_type: doc.payment_type || 'N/A',
+        created_at: doc.$createdAt,
+        email: doc.email,
+        address: doc.address,
+        city: doc.city,
+        state: doc.state,
+        phone_number: doc.phone_number,
+        first_name: doc.first_name,
+        last_name: doc.last_name,
+        payment_status: doc.payment_status,
+        shipping_status: doc.shipping_status,
+        order_items: doc.order_items
+      }));
+
+      // Calculate pagination
+      const totalOrders = allOrders.length;
+      const totalPages = Math.ceil(totalOrders / ORDERS_PER_PAGE);
+      const offset = (page - 1) * ORDERS_PER_PAGE;
+
+      // Get paginated orders from the full list
+      const paginatedOrders = allOrders.slice(offset, offset + ORDERS_PER_PAGE);
+
+      console.log('Pagination details:', {
+        totalOrders,
+        totalPages,
+        currentPage: page,
+        ordersPerPage: ORDERS_PER_PAGE,
+        paginatedOrdersCount: paginatedOrders.length
+      });
+
+      return {
+        orders: paginatedOrders,
+        allOrders: allOrders,
+        totalOrders,
+        currentPage: page,
+        totalPages
+      };
+    } catch (error: any) {
+      console.error('Error fetching orders:', error);
+      throw new Error(error.message || 'Failed to fetch orders');
     }
-    
-    throw new Error(data.error?.message || 'Failed to complete order');
   }
 );
 
 const orderSlice = createSlice({
-  name: 'order',
-  initialState,
+  name: 'orders',
+  initialState: ordersInitialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Add cases for all async thunks
-      .addCase(updateCartEmail.pending, (state) => {
+      .addCase(fetchUserOrders.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(updateCartEmail.fulfilled, (state) => {
+      .addCase(fetchUserOrders.fulfilled, (state, action) => {
         state.loading = false;
+        state.orders = action.payload.orders;
+        state.allOrders = action.payload.allOrders; // Store all orders
+        state.currentPage = action.payload.currentPage;
+        state.totalPages = action.payload.totalPages;
+        state.totalOrders = action.payload.totalOrders;
       })
-      .addCase(updateCartEmail.rejected, (state, action) => {
+      .addCase(fetchUserOrders.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Failed to update email';
-      })
-      // ...similar patterns for other thunks...
-      .addCase(completeCart.fulfilled, (state, action) => {
-        state.loading = false;
-        state.order = action.payload;
+        state.error = action.error.message || 'Failed to fetch orders';
       });
   },
 });

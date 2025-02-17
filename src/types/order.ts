@@ -1,3 +1,5 @@
+import { Models } from 'appwrite';
+
 export interface Address {
   first_name: string;
   last_name: string;
@@ -37,8 +39,7 @@ export interface OrderItem {
   };
 }
 
-export interface Order {
-  $id: string;
+export interface Order extends Models.Document {
   address: string;
   status: string;
   user_id: string;
@@ -47,7 +48,7 @@ export interface Order {
   city: string;
   country: string;
   phone_number: string;
-  payment_type: 'COD' | 'ONLINE';
+  payment_type: string;
   payment_status: string;
   shipping_status: string;
   payment_amount: number;
@@ -72,4 +73,14 @@ export interface Order {
   manifest_url?: string;
   idempotency_key: string;
   created_at: string;
+}
+
+export interface OrdersState {
+  orders: Order[];
+  allOrders: Order[]; // Add this line
+  loading: boolean;
+  error: string | null;
+  currentPage: number;
+  totalPages: number;
+  totalOrders: number;
 }

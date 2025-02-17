@@ -155,7 +155,7 @@ const CheckoutPage = () => {
     const fetchUserAddresses = async () => {
         try {
             setAddressesLoading(true);
-            console.log('Fetching addresses for user:', currentCustomer?.id);
+            console.log('Fetching addresses for user:', currentCustomer?.$id);
 
             const response = await fetch('/api/user/addresses', {
                 headers: {
@@ -216,10 +216,10 @@ const CheckoutPage = () => {
     };
 
     useEffect(() => {
-        if (currentCustomer?.id && token) {
+        if (currentCustomer?.$id && token) {
             fetchUserAddresses();
         }
-    }, [currentCustomer?.id, token]);
+    }, [currentCustomer?.$id, token]);
 
     const handlePaymentSubmit = async () => {
         try {

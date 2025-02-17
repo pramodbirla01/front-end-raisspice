@@ -33,14 +33,19 @@ export default function ProfilePage() {
       const storedData = localStorage.getItem('customer_data');
       const authToken = Cookies.get('auth_token');
 
+      console.log('Auth check:', { storedData, authToken, currentCustomer }); // Debug log
+
       if (storedData && authToken && !currentCustomer) {
         try {
           await dispatch(checkAuthStatus()).unwrap();
+          // Log the current customer after auth check
+          console.log('Customer after auth:', currentCustomer);
           // Fetch orders after authentication
           if (token) {
             await dispatch(fetchCustomerOrders(token));
           }
         } catch (error) {
+          console.error('Auth check failed:', error);
           router.push('/login');
         }
       } else if (!authToken) {

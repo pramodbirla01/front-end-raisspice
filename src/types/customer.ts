@@ -35,10 +35,10 @@ export interface AddressData {
 }
 
 export interface Customer {
-  id: string;
-  full_name: string;
+  $id: string;
+  id: string; // Add this line
   email: string;
-  phone?: string;
-  address: string[]; // Array of stringified Address objects
+  full_name: string;
   created_at: string;
+  // ...other properties...
 }
