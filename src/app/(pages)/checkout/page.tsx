@@ -49,6 +49,8 @@ const CheckoutPage = () => {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [orderId, setOrderId] = useState<string | null>(null);
     const [addressesLoading, setAddressesLoading] = useState(true);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     const sectionVariants = {
         visible: { 
@@ -136,10 +138,17 @@ const CheckoutPage = () => {
     const calculateTotals = () => {
         if (!checkoutData?.products) return { original: 0, sale: 0 };
         
-        return checkoutData.products.reduce((totals, product) => ({
-            original: totals.original + (product.selectedVariant.original_price * product.quantity),
-            sale: totals.sale + (product.selectedVariant.sale_price * product.quantity)
+        // Calculate totals and round to integers
+        const totals = checkoutData.products.reduce((acc, product) => ({
+            original: acc.original + (product.selectedVariant.original_price * product.quantity),
+            sale: acc.sale + (product.selectedVariant.sale_price * product.quantity)
         }), { original: 0, sale: 0 });
+
+        // Round to integers
+        return {
+            original: Math.round(totals.original),
+            sale: Math.round(totals.sale)
+        };
     };
 
     // Update the fetchUserAddresses function to properly type the parsed addresses
@@ -224,18 +233,16 @@ const CheckoutPage = () => {
                 return;
             }
 
-            const totalAmount = calculateTotals().sale;
-
-            // Store order items in localStorage for later retrieval
+            const totalAmount = Math.round(calculateTotals().sale);
             const orderItemsKey = `order_items_${Date.now()}`;
             const orderItems = checkoutData.products.map(product => ({
                 id: product.id,
                 name: product.name,
-                price: product.selectedVariant.sale_price,
-                original_price: product.selectedVariant.original_price,
+                price: Math.round(product.selectedVariant.sale_price),
+                original_price: Math.round(product.selectedVariant.original_price),
                 quantity: product.quantity,
                 imgSrc: product.thumbnail,
-                itemTotal: product.selectedVariant.sale_price * product.quantity,
+                itemTotal: Math.round(product.selectedVariant.sale_price * product.quantity),
                 weight: product.selectedVariant.title,
                 variant_id: product.selectedVariant.id
             }));
@@ -254,45 +261,130 @@ const CheckoutPage = () => {
                 payment_type: paymentMethod,
                 first_name: selectedAddress.full_name.split(' ')[0],
                 last_name: selectedAddress.full_name.split(' ').slice(1).join(' '),
-                idempotency_key: orderItemsKey, // Use this to retrieve items later
+                idempotency_key: orderItemsKey,
                 created_at: new Date().toISOString(),
                 pincode: parseInt(selectedAddress.pincode),
                 total_price: totalAmount,
-                order_items: totalAmount, // Store total amount as double
+                order_items: totalAmount,
                 payment_status: 'pending',
                 shipping_status: 'pending',
                 payment_amount: totalAmount
             };
 
-            // Create the order
-            const response = await fetch('/api/create-cod-order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ order: orderData })
-            });
+            if (paymentMethod === 'COD') {
+                // Handle COD order
+                const response = await fetch('/api/create-cod-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ order: orderData })
+                });
 
-            const result = await response.json();
-            if (!result.success) {
-                throw new Error(result.error || 'Failed to create order');
-            }
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to create order');
+                }
 
-            setOrderId(result.orderId);
-            setShowConfirmation(true);
-            
-            if (mode === 'cart') {
-                dispatch(clearCart());
+                setOrderId(result.orderId);
+                setShowConfirmation(true);
+                
+                if (mode === 'cart') {
+                    dispatch(clearCart());
+                }
+            } else {
+                // Handle Razorpay payment
+                const response = await fetch('/api/create-razorpay-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        amount: totalAmount,
+                        currency: 'INR',
+                        items: orderItems,
+                        orderData
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create Razorpay order');
+                }
+
+                const result = await response.json();
+                
+                return new Promise((resolve, reject) => {
+                    const options = {
+                        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                        amount: result.amount,
+                        currency: 'INR',
+                        name: 'Rais Spices',
+                        description: 'Purchase from Rais Spices',
+                        order_id: result.id,
+                        handler: async function(response: any) {
+                            try {
+                                const verifyResponse = await fetch('/api/verify-payment', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        razorpay_payment_id: response.razorpay_payment_id,
+                                        razorpay_order_id: response.razorpay_order_id,
+                                        razorpay_signature: response.razorpay_signature,
+                                        orderData,
+                                        amount: totalAmount
+                                    })
+                                });
+
+                                const verifyResult = await verifyResponse.json();
+
+                                if (verifyResult.success) {
+                                    // Clear cart if payment was successful
+                                    if (mode === 'cart') {
+                                        dispatch(clearCart());
+                                    }
+                                    
+                                    // Show success confirmation
+                                    setOrderId(verifyResult.orderId);
+                                    setShowConfirmation(true);
+                                    resolve(verifyResult);
+                                } else {
+                                    throw new Error('Payment verification failed');
+                                }
+                            } catch (error) {
+                                setErrorMessage('Payment verification failed. Please try again or contact support.');
+                                setShowErrorModal(true);
+                                reject(error);
+                            }
+                        },
+                        modal: {
+                            ondismiss: function() {
+                                setErrorMessage('Payment was cancelled');
+                                setShowErrorModal(true);
+                            }
+                        },
+                        prefill: {
+                            name: `${orderData.first_name} ${orderData.last_name}`,
+                            email: orderData.email,
+                            contact: orderData.phone_number
+                        },
+                        theme: {
+                            color: '#B91C1C'
+                        }
+                    };
+
+                    const razorpay = new (window as any).Razorpay(options);
+                    razorpay.open();
+                });
             }
         } catch (error) {
             console.error('Payment failed:', error);
-            if (error instanceof Error && error.message.includes('Session expired')) {
-                // Handle session expiration
-                router.push('/login');
-            } else {
-                setError(error instanceof Error ? error.message : 'Payment failed');
-            }
+            setErrorMessage(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+            setShowErrorModal(true);
         } finally {
             setLoading(false);
         }
@@ -533,6 +625,62 @@ const CheckoutPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Payment Error Modal */}
+                {showErrorModal && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.95 }}
+                            className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full mx-4"
+                        >
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <svg 
+                                        className="w-8 h-8 text-red-500" 
+                                        fill="none" 
+                                        stroke="currentColor" 
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path 
+                                            strokeLinecap="round" 
+                                            strokeLinejoin="round" 
+                                            strokeWidth={2} 
+                                            d="M6 18L18 6M6 6l12 12" 
+                                        />
+                                    </svg>
+                                </div>
+                                <h2 className="text-2xl font-semibold mb-2">Payment Failed</h2>
+                                <p className="text-gray-600 mb-6">
+                                    {errorMessage}
+                                </p>
+                                <div className="flex gap-4 justify-center">
+                                    <button
+                                        onClick={() => {
+                                            setShowErrorModal(false);
+                                            setErrorMessage('');
+                                        }}
+                                        className="px-6 py-2 bg-darkRed text-white rounded-lg hover:bg-red-700 transition-colors"
+                                    >
+                                        Try Again
+                                    </button>
+                                    <button
+                                        onClick={() => router.push('/cart')}
+                                        className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                    >
+                                        Back to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
 
                 {/* Order Confirmation Modal */}
                 {showConfirmation && (

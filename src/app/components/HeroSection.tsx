@@ -72,7 +72,7 @@ const HeroSection = () => {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="relative w-full h-[calc(100vh-6rem)] mt-20 bg-bgColor max-lg:h-[80vh]"
+      className="relative w-full h-[calc(100vh-6rem)] mt-20 bg-bgColor  max-lg:h-[80vh]"
     >
       <div className="w-[95%] mx-auto h-full rounded-2xl overflow-hidden">
         <AnimatePresence initial={false}>

@@ -14,32 +14,20 @@ export async function POST(request: NextRequest) {
 
         console.log('Creating order with data:', order); // Debug log
 
-        // Create order document with only the total amount in order_items
+        // Ensure all numeric fields are integers
+        const orderDataWithIntegers = {
+            ...order,
+            total_price: Math.round(Number(order.total_price)),
+            order_items: Math.round(Number(order.total_price)),
+            payment_amount: Math.round(Number(order.payment_amount)),
+            pincode: parseInt(order.pincode.toString())
+        };
+
         const createdOrder = await (databases.createDocument as any)(
             process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
             process.env.NEXT_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID,
             'unique()',
-            {
-                address: order.address,
-                status: order.status,
-                user_id: decoded.userId,
-                email: order.email,
-                state: order.state,
-                city: order.city,
-                country: order.country,
-                phone_number: order.phone_number,
-                payment_type: order.payment_type,
-                first_name: order.first_name,
-                last_name: order.last_name,
-                idempotency_key: order.idempotency_key,
-                created_at: new Date().toISOString(),
-                pincode: order.pincode,
-                total_price: order.total_price,
-                order_items: Number(order.total_price), // Convert to number for double field
-                payment_status: order.payment_status,
-                shipping_status: order.shipping_status,
-                payment_amount: order.payment_amount
-            }
+            orderDataWithIntegers
         );
 
         console.log('Order created:', createdOrder); // Debug log
