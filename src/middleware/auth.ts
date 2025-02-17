@@ -1,5 +1,21 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { verify } from 'jsonwebtoken';
+import { NextApiRequest, NextApiResponse } from 'next';
+
+export interface AuthenticatedRequest extends NextApiRequest {
+    user?: {
+        userId: string;
+        email: string;
+        role: boolean;
+    };
+}
+
+export interface TokenPayload {
+    userId: string;
+    email: string;
+    role: boolean;
+}
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('authToken')?.value
@@ -17,6 +33,35 @@ export function middleware(request: NextRequest) {
   }
 
   return NextResponse.next()
+}
+
+// Simple token verification
+export function verifyToken(token: string): TokenPayload {
+    if (!token) {
+        throw new Error('No token provided');
+    }
+
+    try {
+        const decoded = verify(token, process.env.JWT_SECRET!);
+        return decoded as TokenPayload;
+    } catch (error) {
+        throw new Error('Invalid token');
+    }
+}
+
+// Helper for API routes
+export function getTokenFromRequest(request: NextRequest | Request): string {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+        throw new Error('Invalid token format');
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+        throw new Error('No token provided');
+    }
+
+    return token;
 }
 
 export const config = {

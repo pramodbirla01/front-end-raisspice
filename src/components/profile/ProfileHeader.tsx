@@ -51,8 +51,8 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ customer }) => {
     } catch (error) {
       console.error('Date formatting error:', error);
       // Try fallback to $createdAt if available
-      return customer.$createdAt ? 
-        formatMemberSince(customer.$createdAt) : 
+      return customer.created_at ? 
+        formatMemberSince(customer.created_at) : 
         'Not available';
     }
   };

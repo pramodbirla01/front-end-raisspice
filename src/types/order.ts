@@ -27,25 +27,49 @@ export interface OrderState {
 
 export interface OrderItem {
   product_id: string;
-  quantity: number;
-  price: number;
   name: string;
+  price: number;
+  quantity: number;
+  variant: {
+    id: string;
+    title: number;
+    price: number;
+  };
 }
 
 export interface Order {
-  $id: string; // Document ID from Appwrite
+  $id: string;
+  address: string;
+  status: string;
   user_id: string;
   email: string;
-  status: string;
-  address: string;
   state: string;
   city: string;
-  pincode: number;
+  country: string;
   phone_number: string;
-  payment_type: string;
-  total_price: number;
+  payment_type: 'COD' | 'ONLINE';
   payment_status: string;
   shipping_status: string;
+  payment_amount: number;
+  total_price: number;
+  pincode: number;
+  first_name: string;
+  last_name: string;
+  order_items: string | number;
+  coupon_code?: string;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
+  shiprocket_order_id?: string;
+  shiprocket_shipment_id?: string;
+  tracking_id?: string;
+  refund_id?: string;
+  refund_status?: string;
+  refund_due?: string;
+  cancellation_fee?: number;
+  refund_amount?: number;
+  label_url?: string;
+  manifest_url?: string;
+  idempotency_key: string;
   created_at: string;
-  order_items: OrderItem[];
 }

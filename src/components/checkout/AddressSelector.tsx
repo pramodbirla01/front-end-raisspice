@@ -1,165 +1,104 @@
-"use client"
+'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-
-interface AddressFormData {
-    name: string;
-    street: string;
-    city: string;
-    state: string;
-    pincode: string;
-    country: string;
-    nearby?: string;
-}
+import { Address } from '@/types/customer';
+import AddressForm from './AddressForm';
+import ClientOnly from '@/components/ClientOnly';
 
 interface AddressSelectorProps {
-    addresses: string[];
-    onAddAddress: (address: string) => void;
-    onSelectAddress: (address: string) => void;
-    selectedAddress?: string;
+    addresses: Address[];
+    selectedAddress?: Address | null;
+    onSelectAddress: (address: Address) => void;
+    onAddAddress: (address: Address) => void;
+    userPhone?: string;
 }
 
-const AddressSelector = ({ addresses, onAddAddress, onSelectAddress, selectedAddress }: AddressSelectorProps) => {
-    const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState<AddressFormData>({
-        name: '',
-        street: '',
-        city: '',
-        state: '',
-        pincode: '',
-        country: 'India',
-        nearby: ''
-    });
+const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onAddAddress, userPhone }: AddressSelectorProps) => {
+    const [showAddForm, setShowAddForm] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const formattedAddress = `${formData.name}, ${formData.street}, ${formData.city}, ${formData.state}, ${formData.pincode}, ${formData.country}${formData.nearby ? `, near ${formData.nearby}` : ''}`;
-        onAddAddress(formattedAddress);
-        setShowForm(false);
-        setFormData({
-            name: '',
-            street: '',
-            city: '',
-            state: '',
-            pincode: '',
-            country: 'India',
-            nearby: ''
-        });
-    };
+    useEffect(() => {
+        // Auto-select first address if none selected and addresses exist
+        if (!selectedAddress && addresses.length > 0) {
+            onSelectAddress(addresses[0]);
+        }
+    }, [addresses, selectedAddress, onSelectAddress]);
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Select Delivery Address</h3>
-                <button
-                    onClick={() => setShowForm(true)}
-                    className="text-darkRed hover:text-red-700"
-                >
-                    + Add New Address
-                </button>
-            </div>
+            <h2 className="text-2xl font-semibold mb-6 flex items-center">
+                <span className="w-8 h-8 bg-darkRed text-white rounded-full flex items-center justify-center mr-3 text-sm">2</span>
+                Shipping Address
+            </h2>
 
-            {/* Address List - With Key for Better Hydration */}
-            <div className="grid grid-cols-1 gap-4">
+            {/* Show existing addresses */}
+            <div className="space-y-4">
                 {addresses.map((address, index) => (
-                    <motion.div
-                        key={`address-${index}-${address.substring(0, 10)}`}
-                        onClick={() => onSelectAddress(address)}
-                        className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                            selectedAddress === address
-                                ? 'border-darkRed bg-red-50'
-                                : 'border-gray-200 hover:border-darkRed'
+                    <div
+                        key={index}
+                        className={`border p-4 rounded-lg cursor-pointer transition-all ${
+                            selectedAddress?.address_line1 === address.address_line1 
+                            ? 'border-darkRed bg-red-50' 
+                            : 'border-gray-200 hover:border-red-300'
                         }`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: index * 0.1 }}
+                        onClick={() => onSelectAddress(address)}
                     >
-                        <p className="text-sm">{address}</p>
-                    </motion.div>
+                        <div className="flex justify-between">
+                            <div>
+                                <p className="font-medium">{address.full_name}</p>
+                                <p className="text-sm text-gray-600">{address.mobile}</p>
+                                <p className="text-sm text-gray-600">
+                                    {address.address_line1}
+                                    {address.address_line2 && `, ${address.address_line2}`}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    {address.city}, {address.state} - {address.pincode}
+                                </p>
+                            </div>
+                            {address.is_default && (
+                                <span className="text-xs bg-red-100 text-darkRed px-2 py-1 rounded">Default</span>
+                            )}
+                        </div>
+                    </div>
                 ))}
             </div>
 
-            {/* Form Modal - Only render when needed */}
-            {showForm && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            {/* Add new address button or form */}
+            {!showAddForm ? (
+                <button
+                    onClick={() => setShowAddForm(true)}
+                    className="mt-4 text-darkRed hover:text-red-700 font-medium flex items-center"
                 >
-                    <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <input
-                                    type="text"
-                                    placeholder="Full Name"
-                                    value={formData.name}
-                                    onChange={e => setFormData({...formData, name: e.target.value})}
-                                    className="p-2 border rounded"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Street Address"
-                                    value={formData.street}
-                                    onChange={e => setFormData({...formData, street: e.target.value})}
-                                    className="p-2 border rounded"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="City"
-                                    value={formData.city}
-                                    onChange={e => setFormData({...formData, city: e.target.value})}
-                                    className="p-2 border rounded"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="State"
-                                    value={formData.state}
-                                    onChange={e => setFormData({...formData, state: e.target.value})}
-                                    className="p-2 border rounded"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Pincode"
-                                    value={formData.pincode}
-                                    onChange={e => setFormData({...formData, pincode: e.target.value})}
-                                    className="p-2 border rounded"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Nearby Landmark (Optional)"
-                                    value={formData.nearby}
-                                    onChange={e => setFormData({...formData, nearby: e.target.value})}
-                                    className="p-2 border rounded"
-                                />
-                            </div>
-                            <div className="flex justify-end gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowForm(false)}
-                                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-darkRed text-white rounded hover:bg-red-700"
-                                >
-                                    Save Address
-                                </button>
-                            </div>
-                        </form>
+                    <span className="mr-2">+</span> Add New Address
+                </button>
+            ) : (
+                <div className="border p-4 rounded-lg">
+                    <div className="flex justify-between mb-4">
+                        <h3 className="font-medium">Add New Address</h3>
+                        <button 
+                            onClick={() => setShowAddForm(false)}
+                            className="text-gray-500 hover:text-gray-700"
+                        >
+                            ✕
+                        </button>
                     </div>
-                </motion.div>
+                    <AddressForm
+                        onSubmit={(address) => {
+                            onAddAddress(address);
+                            setShowAddForm(false);
+                        }}
+                        userPhone={userPhone}
+                    />
+                </div>
             )}
         </div>
     );
 };
 
-export default AddressSelector;
+export default function AddressSelectorWrapper(props: AddressSelectorProps) {
+    return (
+        <ClientOnly>
+            <AddressSelector {...props} />
+        </ClientOnly>
+    );
+}

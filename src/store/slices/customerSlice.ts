@@ -214,8 +214,9 @@ export const customerSlice = createSlice({
       })
       .addCase(fetchCustomerOrders.fulfilled, (state, action) => {
         state.orderLoading = false;
+        // Store orders in a new property
         if (state.currentCustomer) {
-          state.currentCustomer.orders = action.payload;
+            (state.currentCustomer as any).orders = action.payload;
         }
       })
       .addCase(fetchCustomerOrders.rejected, (state, action) => {
