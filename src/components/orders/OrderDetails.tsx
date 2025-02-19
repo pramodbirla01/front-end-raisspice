@@ -71,7 +71,7 @@ export default function OrderDetails({ order }: OrderDetailsProps) {
             </div>
             <div className="flex justify-between">
               <span>Total</span>
-              <span className="font-medium">{formatCurrency(order.total_price)}</span>
+              <span className="font-medium">{formatCurrency(order.payment_amount)}</span>
             </div>
           </div>
         </div>
@@ -81,49 +81,57 @@ export default function OrderDetails({ order }: OrderDetailsProps) {
         <h2 className="font-semibold mb-4">Order Items ({orderItems.length})</h2>
         {orderItems.length > 0 ? (
           <div className="space-y-4">
-            {orderItems.map((item: OrderItem, index: number) => (
-              <div key={item.id || index} className="flex items-center gap-4 border-b pb-4">
-                <div className="h-20 w-20 bg-gray-100 rounded-lg overflow-hidden">
-                  <img 
-                    src={item.imgSrc} 
-                    alt={item.name} 
-                    className="w-full h-full object-cover" 
-                  />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-medium">{item.name}</h3>
-                  <p className="text-sm text-gray-600">Weight: {item.weight}g</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-darkRed font-medium">
-                      {formatCurrency(item.price)}
-                    </p>
-                    {item.original_price > item.price && (
-                      <p className="text-sm text-gray-500 line-through">
-                        {formatCurrency(item.original_price)}
-                      </p>
-                    )}
-                  </div>
-                  <p className="text-gray-600">
-                    Quantity: {item.quantity}
-                  </p>
-                </div>
-                <div className="font-medium">
-                  {formatCurrency(item.itemTotal)}
-                </div>
-              </div>
-            ))}
+        {orderItems.map((item: OrderItem, index: number) => (
+          <div key={item.id || index} className="flex items-center gap-4 border-b pb-4">
+            <div className="h-20 w-20 bg-gray-100 rounded-lg overflow-hidden">
+          <img 
+            src={item.imgSrc} 
+            alt={item.name} 
+            className="w-full h-full object-cover" 
+          />
+            </div>
+            <div className="flex-1">
+          <h3 className="font-medium">{item.name}</h3>
+          <p className="text-sm text-gray-600">Weight: {item.weight}g</p>
+          <div className="flex items-center gap-2">
+            <p className="text-darkRed font-medium">
+              {formatCurrency(item.price)}
+            </p>
+            {item.original_price > item.price && (
+              <p className="text-sm text-gray-500 line-through">
+            {formatCurrency(item.original_price)}
+              </p>
+            )}
+          </div>
+          <p className="text-gray-600">
+            Quantity: {item.quantity}
+          </p>
+            </div>
+            <div className="font-medium">
+          {formatCurrency(item.itemTotal)}
+            </div>
+          </div>
+        ))}
           </div>
         ) : (
           <div className="text-gray-500 italic">
-            <p>Total Order Amount: {formatCurrency(order.total_price)}</p>
-            <p>Order ID: {order.$id}</p>
+        <p>Total Order Amount: {formatCurrency(order.payment_amount)}</p>
+        <p>Order ID: {order.$id}</p>
           </div>
         )}
 
         <div className="mt-4 pt-4 border-t">
           <div className="flex justify-between font-semibold text-lg">
-            <span>Total Amount:</span>
-            <span className="text-darkRed">{formatCurrency(order.total_price)}</span>
+        <span>Total Amount:</span>
+        <span className="text-darkRed">{formatCurrency(order.total_price)}</span>
+          </div>
+          <div className="flex justify-between font-semibold text-lg">
+        <span>Coupon Discount:</span>
+        <span className="text-darkRed">-{formatCurrency(order.coupon_price)}</span>
+          </div>
+          <div className="flex justify-between font-semibold text-lg">
+        <span>Final Amount:</span>
+        <span className="text-darkRed">{formatCurrency(order.payment_amount)}</span>
           </div>
         </div>
       </div>

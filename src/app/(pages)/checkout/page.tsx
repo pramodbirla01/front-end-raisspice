@@ -10,6 +10,7 @@ import AddressSelector from '@/components/checkout/AddressSelector';
 import ClientOnly from '@/components/ClientOnly';
 import { Customer, Address } from '@/types/customer';
 import { Order } from '@/types/order';
+import CouponSection from '@/components/checkout/CouponSection';
 
 interface CheckoutProduct {
   id: string;
@@ -51,6 +52,8 @@ const CheckoutPage = () => {
     const [addressesLoading, setAddressesLoading] = useState(true);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
 
     const sectionVariants = {
         visible: { 
@@ -69,6 +72,62 @@ const CheckoutPage = () => {
     const paymentInView = useInView(paymentRef, { once: true });
     const summaryInView = useInView(summaryRef, { once: true });
 
+    const fetchUserAddresses = async () => {
+        try {
+            setAddressesLoading(true);
+            setAddressError(null);
+            
+            const response = await fetch('/api/user/addresses', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await response.json();
+            console.log('Raw API response:', data);
+
+            if (data.success && Array.isArray(data.addresses)) {
+                // Parse each string address into an object
+                const parsedAddresses = data.addresses
+                    .map((addrStr: string) => {
+                        try {
+                            const addr = JSON.parse(addrStr);
+                            // Validate the parsed address has required fields
+                            if (addr && 
+                                typeof addr === 'object' &&
+                                addr.full_name &&
+                                addr.mobile &&
+                                addr.address_line1 &&
+                                addr.city &&
+                                addr.state &&
+                                addr.pincode
+                            ) {
+                                return addr as Address;
+                            }
+                            return null;
+                        } catch (e) {
+                            console.error('Error parsing address:', e, addrStr);
+                            return null;
+                        }
+                    })
+                    .filter((addr: Address | null): addr is Address => addr !== null);
+
+                console.log('Parsed addresses:', parsedAddresses);
+                setAddresses(parsedAddresses);
+                
+                if (parsedAddresses.length > 0) {
+                    const defaultAddr = parsedAddresses.find((addr: Address) => addr.is_default) || parsedAddresses[0];
+                    setSelectedAddress(defaultAddr);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching addresses:', error);
+            setAddressError('Failed to load addresses. Please try again.');
+        } finally {
+            setAddressesLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const initializeCheckout = async () => {
@@ -78,8 +137,8 @@ const CheckoutPage = () => {
                         return;
                     }
 
+                    // First initialize checkout data
                     if (mode === 'buyNow') {
-                        // Handle Buy Now checkout
                         const storedData = localStorage.getItem('buyNowData');
                         if (!storedData) throw new Error('No checkout data found');
 
@@ -88,9 +147,7 @@ const CheckoutPage = () => {
                             mode: 'buyNow',
                             products: [parsed.product]
                         });
-                    } 
-                    else if (mode === 'cart') {
-                        // Handle Cart checkout
+                    } else if (mode === 'cart') {
                         if (!cart?.items?.length) {
                             router.push('/cart');
                             return;
@@ -116,6 +173,12 @@ const CheckoutPage = () => {
                         });
                     } else {
                         router.push('/shop');
+                        return;
+                    }
+
+                    // Then fetch addresses
+                    if (currentCustomer?.$id) {
+                        await fetchUserAddresses();
                     }
 
                     setLoading(false);
@@ -151,239 +214,132 @@ const CheckoutPage = () => {
         };
     };
 
-    // Update the fetchUserAddresses function to properly type the parsed addresses
-    const fetchUserAddresses = async () => {
-        try {
-            setAddressesLoading(true);
-            console.log('Fetching addresses for user:', currentCustomer?.$id);
-
-            const response = await fetch('/api/user/addresses', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            const data = await response.json();
-            console.log('Raw address response:', data);
-
-            if (data.success && Array.isArray(data.addresses)) {
-                const parsedAddresses = data.addresses
-                    .map((addrStr: string) => {
-                        try {
-                            if (typeof addrStr !== 'string') {
-                                console.error('Invalid address format:', addrStr);
-                                return null;
-                            }
-
-                            const parsed = JSON.parse(addrStr);
-                            // Validate the parsed data has required fields
-                            if (!parsed || typeof parsed !== 'object') {
-                                console.error('Invalid parsed address:', parsed);
-                                return null;
-                            }
-
-                            return {
-                                id: parsed.id || `addr_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
-                                full_name: parsed.full_name,
-                                mobile: parsed.mobile,
-                                address_line1: parsed.address_line1,
-                                address_line2: parsed.address_line2 || '',
-                                city: parsed.city,
-                                state: parsed.state,
-                                pincode: parsed.pincode,
-                                type: parsed.type || 'home',
-                                is_default: parsed.is_default || false
-                            } as Address;
-                        } catch (e) {
-                            console.error('Error parsing address:', e);
-                            return null;
-                        }
-                    })
-                    .filter((addr: Address | null): addr is Address => addr !== null);
-
-                if (parsedAddresses.length > 0) {
-                    setAddresses(parsedAddresses);
-                    const defaultAddr = parsedAddresses.find((addr: Address) => addr.is_default) || parsedAddresses[0];
-                    setSelectedAddress(defaultAddr);
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching addresses:', error);
-            setAddressError('Failed to load saved addresses');
-        } finally {
-            setAddressesLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (currentCustomer?.$id && token) {
-            fetchUserAddresses();
-        }
-    }, [currentCustomer?.$id, token]);
-
     const handlePaymentSubmit = async () => {
         try {
             setLoading(true);
             setAddressError(null);
             setError(null);
-            
+
+            // Debug log
+            console.log('Starting payment with customer:', {
+                id: currentCustomer?.$id,
+                email: currentCustomer?.email,
+                name: currentCustomer?.full_name
+            });
+
             if (!selectedAddress || !checkoutData?.products) {
                 setAddressError('Please select or add a delivery address');
-                setLoading(false);
                 return;
             }
 
             const totalAmount = Math.round(calculateTotals().sale);
-            const orderItemsKey = `order_items_${Date.now()}`;
-            const orderItems = checkoutData.products.map(product => ({
-                id: product.id,
-                name: product.name,
-                price: Math.round(product.selectedVariant.sale_price),
-                original_price: Math.round(product.selectedVariant.original_price),
-                quantity: product.quantity,
-                imgSrc: product.thumbnail,
-                itemTotal: Math.round(product.selectedVariant.sale_price * product.quantity),
-                weight: product.selectedVariant.title,
-                variant_id: product.selectedVariant.id
-            }));
+            const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
+            const finalAmount = appliedCoupon ? appliedCoupon.finalPrice : totalAmount;
+            const orderItemsKey = `rzp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            localStorage.setItem(orderItemsKey, JSON.stringify(orderItems));
-
+            // Create complete order data
             const orderData = {
                 address: selectedAddress.address_line1,
                 status: 'pending',
-                user_id: currentCustomer?.id,
+                user_id: currentCustomer?.id || currentCustomer?.$id, // Try both possible ID fields
                 email: currentCustomer?.email || '',
                 state: selectedAddress.state,
                 city: selectedAddress.city,
                 country: 'IN',
                 phone_number: selectedAddress.mobile,
                 payment_type: paymentMethod,
-                first_name: selectedAddress.full_name.split(' ')[0],
-                last_name: selectedAddress.full_name.split(' ').slice(1).join(' '),
-                idempotency_key: orderItemsKey,
-                created_at: new Date().toISOString(),
-                pincode: parseInt(selectedAddress.pincode),
-                total_price: totalAmount,
-                order_items: totalAmount,
                 payment_status: 'pending',
                 shipping_status: 'pending',
-                payment_amount: totalAmount
+                first_name: selectedAddress.full_name.split(' ')[0],
+                last_name: selectedAddress.full_name.split(' ').slice(1).join(' '),
+                pincode: parseInt(selectedAddress.pincode),
+                total_price: totalAmount,
+                payment_amount: finalAmount,
+                order_items: checkoutData.products.reduce((sum, p) => sum + p.quantity, 0),
+                product_id: checkoutData.products.map(p => p.id),
+                idempotency_key: orderItemsKey,
+                coupon_code: appliedCoupon?.code,
+                coupon_discount: appliedCoupon?.discount,
+                coupon_price: discountAmount
             };
 
-            if (paymentMethod === 'COD') {
-                // Handle COD order
-                const response = await fetch('/api/create-cod-order', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ order: orderData })
-                });
+            // Validate orderData before proceeding
+            if (!orderData.user_id) {
+                throw new Error('User ID is required. Please try refreshing the page.');
+            }
 
-                const result = await response.json();
-                if (!result.success) {
-                    throw new Error(result.error || 'Failed to create order');
-                }
-
-                setOrderId(result.orderId);
-                setShowConfirmation(true);
-                
-                if (mode === 'cart') {
-                    dispatch(clearCart());
-                }
-            } else {
-                // Handle Razorpay payment
+            if (paymentMethod === 'ONLINE') {
+                // Create Razorpay order
                 const response = await fetch('/api/create-razorpay-order', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        amount: totalAmount,
+                        amount: finalAmount,
                         currency: 'INR',
-                        items: orderItems,
                         orderData
                     })
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to create Razorpay order');
+                    throw new Error('Failed to create payment order');
                 }
 
                 const result = await response.json();
-                
-                return new Promise((resolve, reject) => {
-                    const options = {
-                        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                        amount: result.amount,
-                        currency: 'INR',
-                        name: 'Rais Spices',
-                        description: 'Purchase from Rais Spices',
-                        order_id: result.id,
-                        handler: async function(response: any) {
-                            try {
-                                const verifyResponse = await fetch('/api/verify-payment', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({
-                                        razorpay_payment_id: response.razorpay_payment_id,
-                                        razorpay_order_id: response.razorpay_order_id,
-                                        razorpay_signature: response.razorpay_signature,
-                                        orderData,
-                                        amount: totalAmount
-                                    })
-                                });
+                console.log('Razorpay order created:', result);
 
-                                const verifyResult = await verifyResponse.json();
+                const options = {
+                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                    amount: result.amount,
+                    currency: result.currency,
+                    name: 'Rais Spices',
+                    description: 'Purchase from Rais Spices',
+                    order_id: result.id,
+                    handler: async (response: any) => {
+                        try {
+                            console.log('Payment successful, verifying...', {
+                                orderId: response.razorpay_order_id,
+                                paymentId: response.razorpay_payment_id,
+                                userId: orderData.user_id
+                            });
 
-                                if (verifyResult.success) {
-                                    // Clear cart if payment was successful
-                                    if (mode === 'cart') {
-                                        dispatch(clearCart());
-                                    }
-                                    
-                                    // Show success confirmation
-                                    setOrderId(verifyResult.orderId);
-                                    setShowConfirmation(true);
-                                    resolve(verifyResult);
-                                } else {
-                                    throw new Error('Payment verification failed');
+                            const verifyResponse = await fetch('/api/verify-payment', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    orderData,
+                                    amount: finalAmount,
+                                    user_id: orderData.user_id
+                                })
+                            });
+
+                            const verifyResult = await verifyResponse.json();
+                            if (verifyResult.success) {
+                                if (mode === 'cart') {
+                                    dispatch(clearCart());
                                 }
-                            } catch (error) {
-                                setErrorMessage('Payment verification failed. Please try again or contact support.');
-                                setShowErrorModal(true);
-                                reject(error);
+                                setOrderId(verifyResult.orderId);
+                                setShowConfirmation(true);
+                            } else {
+                                throw new Error(verifyResult.error || 'Payment verification failed');
                             }
-                        },
-                        modal: {
-                            ondismiss: function() {
-                                setErrorMessage('Payment was cancelled');
-                                setShowErrorModal(true);
-                            }
-                        },
-                        prefill: {
-                            name: `${orderData.first_name} ${orderData.last_name}`,
-                            email: orderData.email,
-                            contact: orderData.phone_number
-                        },
-                        theme: {
-                            color: '#B91C1C'
+                        } catch (error) {
+                            console.error('Verification error:', error);
+                            setErrorMessage('Payment verification failed. Please try again.');
+                            setShowErrorModal(true);
                         }
-                    };
+                    },
+                    // ...rest of Razorpay options...
+                };
 
-                    const razorpay = new (window as any).Razorpay(options);
-                    razorpay.open();
-                });
+                const rzp = new (window as any).Razorpay(options);
+                rzp.open();
             }
         } catch (error) {
-            console.error('Payment failed:', error);
-            setErrorMessage(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+            console.error('Payment error:', error);
+            setErrorMessage(error instanceof Error ? error.message : 'Payment failed');
             setShowErrorModal(true);
         } finally {
             setLoading(false);
@@ -394,12 +350,13 @@ const CheckoutPage = () => {
         try {
             const addressWithId = {
                 ...newAddress,
-                id: `addr_${Date.now()}${Math.random().toString(36).substr(2, 9)}`
+                id: `addr_${Date.now()}${Math.random().toString(36).substr(2, 9)}`,
+                is_default: addresses.length === 0 // Make first address default
             };
 
             const updatedAddresses = [...addresses, addressWithId];
             
-            // Update user's addresses in Appwrite
+            // Update addresses in Appwrite
             const response = await fetch('/api/user/addresses', {
                 method: 'POST',
                 headers: {
@@ -415,8 +372,9 @@ const CheckoutPage = () => {
             if (data.success) {
                 setAddresses(updatedAddresses);
                 setSelectedAddress(addressWithId);
+                setShowAddressModal(false); // Close modal after success
             } else {
-                throw new Error(data.error);
+                throw new Error(data.error || 'Failed to save address');
             }
         } catch (error) {
             console.error('Error saving address:', error);
@@ -442,40 +400,63 @@ const CheckoutPage = () => {
         loadScript();
     }, []);
 
-    const renderAddressSection = () => {
-        if (addressesLoading) {
-            return (
-                <div className="bg-white p-8 rounded-2xl shadow-premium">
-                    <div className="flex items-center justify-center space-x-2">
-                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-red-500 border-t-transparent"></div>
-                        <span className="text-gray-600">Loading addresses...</span>
-                    </div>
-                </div>
-            );
-        }
+    const handleOpenAddressModal = () => setShowAddressModal(true);
+    const handleCloseAddressModal = () => setShowAddressModal(false);
 
-        return (
-            <div className="bg-white p-8 rounded-2xl shadow-premium">
-                {addressError && (
-                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-                        {addressError}
-                    </div>
-                )}
-                {error && (
-                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
-                        {error}
-                    </div>
-                )}
-                <AddressSelector
-                    addresses={addresses}
-                    onAddAddress={handleAddAddress}
-                    onSelectAddress={setSelectedAddress}
-                    selectedAddress={selectedAddress}
-                    userPhone={userPhone}
-                />
-            </div>
-        );
+    const handleApplyCoupon = (couponData: any) => {
+        setAppliedCoupon(couponData);
     };
+
+    const renderAddressSection = () => (
+        <div className="bg-white p-8 rounded-2xl shadow-premium">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold">Delivery Address</h2>
+                <button
+                    onClick={handleOpenAddressModal}
+                    className="px-4 py-2 bg-darkRed text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                    Add New Address
+                </button>
+            </div>
+            
+            {addressesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-500 border-t-transparent"></div>
+                    <span className="ml-3 text-gray-600">Loading addresses...</span>
+                </div>
+            ) : (
+                <>
+                    {addressError && (
+                        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
+                            {addressError}
+                        </div>
+                    )}
+                    
+                    {addresses.length === 0 ? (
+                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700">
+                            No addresses found. Please add a delivery address.
+                        </div>
+                    ) : (
+                        <AddressSelector
+                            addresses={addresses}
+                            onAddAddress={handleAddAddress}
+                            onSelectAddress={handleSelectAddress}
+                            selectedAddress={selectedAddress}
+                            userPhone={userPhone}
+                        />
+                    )}
+                </>
+            )}
+        </div>
+    );
+
+    useEffect(() => {
+        if (currentCustomer?.$id && token) {
+            fetchUserAddresses();
+        } else {
+            setAddressesLoading(false);
+        }
+    }, [currentCustomer?.$id, token]);
 
     if (loading) {
         return (
@@ -524,6 +505,17 @@ const CheckoutPage = () => {
 
                             {/* Address Section */}
                             {renderAddressSection()}
+
+                            {/* Coupon Section */}
+                            <div className="bg-white p-8 rounded-2xl shadow-premium">
+                                <h2 className="text-2xl font-semibold mb-6">Coupon</h2>
+                                <CouponSection
+                                    onApplyCoupon={handleApplyCoupon}
+                                    totalAmount={calculateTotals().sale}
+                                    onRemoveCoupon={() => setAppliedCoupon(null)}
+                                    appliedCoupon={appliedCoupon}
+                                />
+                            </div>
 
                             {/* Payment Section */}
                             <div
@@ -615,9 +607,19 @@ const CheckoutPage = () => {
                                                 <span className="line-through">₹{calculateTotals().original}</span>
                                             </div>
                                         )}
+                                        <div className="flex justify-between text-gray-600">
+                                            <span>Subtotal</span>
+                                            <span>₹{calculateTotals().sale}</span>
+                                        </div>
+                                        {appliedCoupon && (
+                                            <div className="flex justify-between text-green-600">
+                                                <span>Coupon Discount ({appliedCoupon.discount}%)</span>
+                                                <span>-₹{appliedCoupon.discountAmount}</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between font-bold text-xl">
                                             <span>Total</span>
-                                            <span>₹{calculateTotals().sale}</span>
+                                            <span>₹{appliedCoupon ? appliedCoupon.finalPrice : calculateTotals().sale}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -733,6 +735,41 @@ const CheckoutPage = () => {
                                     </button>
                                 </div>
                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {/* Add Address Modal */}
+                {showAddressModal && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.95 }}
+                            className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full mx-4"
+                        >
+                            <AddressSelector
+                                addresses={[]}
+                                onAddAddress={(address: Address) => {
+                                    handleAddAddress(address);
+                                    handleCloseAddressModal();
+                                }}
+                                onSelectAddress={() => {}}
+                                selectedAddress={null}
+                                userPhone={userPhone}
+                                hideExistingAddresses
+                            />
+                            <button
+                                onClick={handleCloseAddressModal}
+                                className="mt-4 w-full px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
                         </motion.div>
                     </motion.div>
                 )}

@@ -36,9 +36,12 @@ export interface AddressData {
 
 export interface Customer {
   $id: string;
-  id: string; // Add this line
+  id: string;
   email: string;
   full_name: string;
   created_at: string;
-  // ...other properties...
+  role: boolean;
+  email_verified: boolean;
+  last_login?: string;
+  address?: string[];
 }

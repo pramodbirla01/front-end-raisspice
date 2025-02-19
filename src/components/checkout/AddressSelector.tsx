@@ -12,9 +12,17 @@ interface AddressSelectorProps {
     onSelectAddress: (address: Address) => void;
     onAddAddress: (address: Address) => void;
     userPhone?: string;
+    hideExistingAddresses?: boolean; // Add this prop
 }
 
-const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onAddAddress, userPhone }: AddressSelectorProps) => {
+const AddressSelector = ({ 
+    addresses, 
+    selectedAddress, 
+    onSelectAddress, 
+    onAddAddress, 
+    userPhone,
+    hideExistingAddresses = false // Add default value
+}: AddressSelectorProps) => {
     const [showAddForm, setShowAddForm] = useState(false);
 
     useEffect(() => {
@@ -31,37 +39,39 @@ const AddressSelector = ({ addresses, selectedAddress, onSelectAddress, onAddAdd
                 Shipping Address
             </h2>
 
-            {/* Show existing addresses */}
-            <div className="space-y-4">
-                {addresses.map((address, index) => (
-                    <div
-                        key={index}
-                        className={`border p-4 rounded-lg cursor-pointer transition-all ${
-                            selectedAddress?.address_line1 === address.address_line1 
-                            ? 'border-darkRed bg-red-50' 
-                            : 'border-gray-200 hover:border-red-300'
-                        }`}
-                        onClick={() => onSelectAddress(address)}
-                    >
-                        <div className="flex justify-between">
-                            <div>
-                                <p className="font-medium">{address.full_name}</p>
-                                <p className="text-sm text-gray-600">{address.mobile}</p>
-                                <p className="text-sm text-gray-600">
-                                    {address.address_line1}
-                                    {address.address_line2 && `, ${address.address_line2}`}
-                                </p>
-                                <p className="text-sm text-gray-600">
-                                    {address.city}, {address.state} - {address.pincode}
-                                </p>
+            {/* Only show existing addresses if not hidden */}
+            {!hideExistingAddresses && (
+                <div className="space-y-4">
+                    {addresses.map((address, index) => (
+                        <div
+                            key={index}
+                            className={`border p-4 rounded-lg cursor-pointer transition-all ${
+                                selectedAddress?.address_line1 === address.address_line1 
+                                ? 'border-darkRed bg-red-50' 
+                                : 'border-gray-200 hover:border-red-300'
+                            }`}
+                            onClick={() => onSelectAddress(address)}
+                        >
+                            <div className="flex justify-between">
+                                <div>
+                                    <p className="font-medium">{address.full_name}</p>
+                                    <p className="text-sm text-gray-600">{address.mobile}</p>
+                                    <p className="text-sm text-gray-600">
+                                        {address.address_line1}
+                                        {address.address_line2 && `, ${address.address_line2}`}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        {address.city}, {address.state} - {address.pincode}
+                                    </p>
+                                </div>
+                                {address.is_default && (
+                                    <span className="text-xs bg-red-100 text-darkRed px-2 py-1 rounded">Default</span>
+                                )}
                             </div>
-                            {address.is_default && (
-                                <span className="text-xs bg-red-100 text-darkRed px-2 py-1 rounded">Default</span>
-                            )}
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {/* Add new address button or form */}
             {!showAddForm ? (

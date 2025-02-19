@@ -11,22 +11,19 @@ export async function GET(request: NextRequest) {
 
         console.log('Fetching addresses for user:', decoded.userId);
 
-        // Use type assertion to resolve the union type issue
         const user = await (databases.getDocument as any)(
             process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
             process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID!,
             decoded.userId
-        ) as Models.Document;
+        );
 
-        console.log('User document:', user);
-
-        // Get the address array from the user document
-        const addresses = user.address || [];
-        console.log('Raw addresses:', addresses);
+        // Get the address array (it's stored in 'address' field, not 'addresses')
+        const addressList = user.address || [];
+        console.log('Raw addresses from database:', addressList);
 
         return NextResponse.json({
             success: true,
-            addresses
+            addresses: addressList // Return the raw array of address strings
         });
     } catch (error: any) {
         console.error('Error in GET /api/user/addresses:', error);
@@ -41,22 +38,21 @@ export async function POST(request: NextRequest) {
     try {
         const token = getTokenFromRequest(request);
         const decoded = verifyToken(token);
-        const { addresses }: { addresses: Address[] } = await request.json();
+        const { addresses } = await request.json();
 
-        // Ensure addresses are properly stringified
-        const stringifiedAddresses = addresses.map((addr: any) => {
-            return typeof addr === 'string' ? addr : JSON.stringify(addr);
-        });
+        // Convert Address objects to strings if they aren't already
+        const addressStrings = addresses.map((addr: Address) => 
+            typeof addr === 'string' ? addr : JSON.stringify(addr)
+        );
 
-        // Update the user document with type assertion
         const updatedUser = await (databases.updateDocument as any)(
             process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
             process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID!,
             decoded.userId,
             {
-                address: stringifiedAddresses
+                address: addressStrings // Use 'address' field name to match schema
             }
-        ) as Models.Document;
+        );
 
         return NextResponse.json({
             success: true,

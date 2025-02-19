@@ -57,7 +57,10 @@ export interface Order extends Models.Document {
   first_name: string;
   last_name: string;
   order_items: string | number;
+  product_ids: string[];
   coupon_code?: string;
+  coupon_discount?: number;
+  discount_price?: number;
   razorpay_order_id?: string;
   razorpay_payment_id?: string;
   razorpay_signature?: string;
