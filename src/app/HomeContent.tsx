@@ -14,7 +14,8 @@ import { useLoading } from '../hooks/useLoading';
 import { fetchHeroSections } from '@/store/slices/heroSectionSlice';
 import { fetchCollections } from '@/store/slices/collectionSlice';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import Blog from './components/Blog';
+// import Blog from './components/Blog';
+import Blog from '@/components/Blog';
 
 export default function HomeContent() {
   const dispatch = useDispatch<AppDispatch>();

@@ -41,7 +41,7 @@ export interface OrderItem {
 
 export interface Order extends Models.Document {
   address: string;
-  status: string;
+  status: 'pending' | 'processing' | 'completed' | 'cancelled';
   user_id: string;
   email: string;
   state: string;
@@ -50,7 +50,7 @@ export interface Order extends Models.Document {
   phone_number: string;
   payment_type: string;
   payment_status: string;
-  shipping_status: string;
+  shipping_status: 'pending' | 'shipped' | 'delivered' | 'cancelled';
   payment_amount: number;
   total_price: number;
   pincode: number;

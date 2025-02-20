@@ -88,7 +88,7 @@ const Navbar = () => {
     { text: "Shop", link: "/shop" },
     { text: "Category", link: "#", isDropdown: true },
     { text: "About Us", link: "/about" },
-    { text: "Contact Us", link: "/contact" },
+    { text: "Blog", link: "/blog" },
   ];
 
   // Update the menuItems array to include href for all items

@@ -1,34 +1,96 @@
 'use client';
+import { useEffect, useState } from 'react';
+import { databases, storage } from '@/lib/appwrite';
+import type { Blog } from '@/types/blog';
 import Image from 'next/image';
+import { Models } from 'appwrite';
 import { useParams } from 'next/navigation';
-import { blogData } from '@/data/blogData';
+import { format } from 'date-fns';
 
 export default function BlogPost() {
-  const { id } = useParams();
-  const blog = blogData.find(post => post.id === Number(id));
+  const params = useParams();
+  const blogId = params?.id as string;
+  const [blog, setBlog] = useState<Blog | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
-  if (!blog) {
-    return <div>Blog post not found</div>;
+  useEffect(() => {
+    const fetchBlog = async () => {
+      if (!blogId) return;
+      
+      try {
+        const response = await (databases.getDocument<Models.Document & Blog>)(
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+          process.env.NEXT_PUBLIC_APPWRITE_BLOG_COLLECTION_ID!,
+          blogId
+        );
+        setBlog(response);
+      } catch (error) {
+        console.error('Error fetching blog:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlog();
+  }, [blogId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-darkRed"></div>
+      </div>
+    );
   }
 
+  if (!blog) {
+    return <div>Blog not found</div>;
+  }
+
+  const imageUrl = blog?.headerImage 
+    ? storage.getFilePreview(
+        process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!,
+        blog.headerImage
+      )
+    : '/images/blog-placeholder.jpg';
+
   return (
-    <article className="max-w-4xl mx-auto px-4 py-12">
-      <div className="relative w-full h-[400px] mb-8">
+    <article className="min-h-screen bg-bgColor">
+      {/* Hero Section with Full-width Image */}
+      <div className="relative h-[70vh] w-full">
         <Image
-          src={blog.image}
-          alt={blog.title}
+          src={imageError ? '/images/blog-placeholder.jpg' : imageUrl.toString()}
+          alt={blog?.title || 'Blog post'}
           fill
-          className="object-cover rounded-lg"
+          className="object-cover"
+          onError={() => setImageError(true)}
+          priority
+          sizes="100vw"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-8 md:p-16 text-white">
+          <div className="container mx-auto max-w-5xl">
+            <div className="text-sm mb-4 opacity-90">
+              {format(new Date(blog.$createdAt), 'MMMM dd, yyyy')}
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 leading-tight">
+              {blog.title}
+            </h1>
+            <p className="text-xl md:text-2xl opacity-90 max-w-3xl">
+              {blog.subtitle}
+            </p>
+          </div>
+        </div>
       </div>
-      <h1 className="text-4xl font-bold mb-6">{blog.title}</h1>
-      <div className="text-gray-600 mb-4">
-        Published on {new Date(blog.date).toLocaleDateString()}
-      </div>
-      <div className="prose max-w-none">
-        <p className="whitespace-pre-line text-lg leading-relaxed">
-          {blog.content}
-        </p>
+
+      {/* Content Section */}
+      <div className="container mx-auto px-4 max-w-4xl py-16">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden p-8 md:p-12">
+          <div 
+            className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-gray-800 prose-headings:mt-8 prose-headings:mb-4 prose-p:text-gray-600 prose-p:leading-relaxed prose-p:mb-6 prose-img:rounded-xl prose-img:my-8 prose-a:text-darkRed hover:prose-a:text-lightRed prose-strong:text-gray-800"
+            dangerouslySetInnerHTML={{ __html: blog.content }}
+          />
+        </div>
       </div>
     </article>
   );

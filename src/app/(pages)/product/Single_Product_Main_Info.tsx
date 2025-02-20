@@ -53,6 +53,7 @@ const Single_Product_Main_Info = ({
   const [quantity, setQuantity] = useState(1);
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentVariantId, setCurrentVariantId] = useState(selectedVariantId || variants[0]?.id);
+  const [stockError, setStockError] = useState<string | null>(null);
 
   const handleQuantityChange = (action: "increase" | "decrease") => {
     if (action === "increase") {
@@ -70,87 +71,123 @@ const Single_Product_Main_Info = ({
     }
   };
 
+  const checkStock = async (variantId: string, quantity: number) => {
+    // Get current variant directly from variants prop
+    const currentVariant = variants.find(v => v.id === variantId);
+    
+    if (!currentVariant) {
+        setStockError('Variant not found');
+        return false;
+    }
+
+    // Direct stock check from variant data
+    if (currentVariant.inventory < quantity) {
+        setStockError(`Only ${currentVariant.inventory} items available`);
+        return false;
+    }
+
+    // Clear any existing error if stock is available
+    setStockError(null);
+    return true;
+  };
+
   const handleAddToCart = async () => {
     try {
-      const currentVariant = variants.find(v => v.id === currentVariantId);
-      if (!currentVariant) return;
+        const currentVariant = variants.find(v => v.id === currentVariantId);
+        if (!currentVariant) {
+            setStockError('Invalid variant selected');
+            return;
+        }
 
-      // Transform to match Weight interface
-      const weights: Weight[] = variants.map(v => ({
-        id: 0, // Default value
-        documentId: v.id,
-        weight_Value: v.title,
-        original_Price: v.original_price,
-        sale_Price: v.sale_price,
-        inventory: [] // Empty array since we don't have inventory data
-      }));
+        // Check stock before adding to cart
+        const hasStock = await checkStock(currentVariantId, quantity);
+        if (!hasStock) return;
 
-      const weightIndex = variants.findIndex(v => v.id === currentVariantId);
-      
-      await dispatch(addToCart({
-        product: {
-          ...product,
-          weights
-        },
-        weightIndex,
-        quantity
-      }));
+        // Continue with adding to cart
+        // Transform to match Weight interface
+        const weights: Weight[] = variants.map(v => ({
+          id: 0, // Default value
+          documentId: v.id,
+          weight_Value: v.title,
+          original_Price: v.original_price,
+          sale_Price: v.sale_price,
+          inventory: [] // Empty array since we don't have inventory data
+        }));
+
+        const weightIndex = variants.findIndex(v => v.id === currentVariantId);
+        
+        await dispatch(addToCart({
+          product: {
+            ...product,
+            weights
+          },
+          weightIndex,
+          quantity
+        }));
     } catch (error) {
-      console.error('Failed to add to cart:', error);
+        console.error('Failed to add to cart:', error);
+        setStockError('Failed to add to cart');
     }
   };
 
   const handleBuyNow = async () => {
     if (!isLoggedIn) {
-      setShowLoginModal(true);
-      return;
+        setShowLoginModal(true);
+        return;
     }
 
     const currentVariant = variants.find(v => v.id === currentVariantId);
-    if (!currentVariant) return;
+    if (!currentVariant) {
+        setStockError('Invalid variant selected');
+        return;
+    }
+
+    // Check stock directly
+    const hasStock = await checkStock(currentVariantId, quantity);
+    if (!hasStock) return;
 
     try {
-      // Create the buyNowData object
-      const buyNowData = {
-        product: {
-          id: product.$id,
-          name: title,
-          thumbnail: product.image,
-          category: product.category,
-          quantity: quantity,
-          selectedVariant: {
-            id: currentVariant.id,
-            title: currentVariant.title,
-            sale_price: currentVariant.sale_price,
-            original_price: currentVariant.original_price
+        // Create the buyNowData object
+        const buyNowData = {
+          product: {
+            id: product.$id,
+            name: title,
+            thumbnail: product.image,
+            category: product.category,
+            quantity: quantity,
+            selectedVariant: {
+              id: currentVariant.id,
+              title: currentVariant.title,
+              sale_price: currentVariant.sale_price,
+              original_price: currentVariant.original_price
+            }
           }
-        }
-      };
+        };
 
-      // Store data with error handling
-      try {
-        localStorage.setItem('buyNowData', JSON.stringify(buyNowData));
-        
-        // Verify the data was stored correctly
-        const verifyData = localStorage.getItem('buyNowData');
-        if (!verifyData) {
-          throw new Error('Failed to store checkout data');
-        }
+        // Store data with error handling
+        try {
+          localStorage.setItem('buyNowData', JSON.stringify(buyNowData));
+          
+          // Verify the data was stored correctly
+          const verifyData = localStorage.getItem('buyNowData');
+          if (!verifyData) {
+            throw new Error('Failed to store checkout data');
+          }
 
-        const parsed = JSON.parse(verifyData);
-        if (!parsed?.product?.name) {
-          throw new Error('Stored data is invalid');
-        }
+          const parsed = JSON.parse(verifyData);
+          if (!parsed?.product?.name) {
+            throw new Error('Stored data is invalid');
+          }
 
-        // Only navigate if data is stored successfully
-        router.push('/checkout?mode=buyNow');
-      } catch (storageError) {
-        console.error('Storage error:', storageError);
-        alert('Failed to start checkout process. Please try again.');
-      }
+          // Only navigate if data is stored successfully
+          router.push('/checkout?mode=buyNow');
+        } catch (storageError) {
+          console.error('Storage error:', storageError);
+          alert('Failed to start checkout process. Please try again.');
+        }
     } catch (error) {
-      console.error('Buy Now Error:', error);
-      alert('There was an error processing your request. Please try again.');
+        console.error('Buy Now Error:', error);
+        setStockError('Failed to process buy now request');
     }
   };
 
@@ -323,6 +360,12 @@ const Single_Product_Main_Info = ({
             <Heart className="w-6 h-6" />
           </motion.button>
         </motion.div>
+
+        {stockError && (
+          <div className="text-red-600 mb-4 p-2 bg-red-50 rounded">
+              {stockError}
+          </div>
+        )}
 
         <motion.div
           variants={containerVariants}

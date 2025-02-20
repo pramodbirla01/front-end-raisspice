@@ -6,7 +6,7 @@ interface LoaderProps {
 
 const Loader = ({ isLoading }: LoaderProps) => {
   const [isVisible, setIsVisible] = useState(true);
-  const word1 = 'RICE'.split('');
+  const word1 = 'RAIS'.split('');
   const word2 = 'SPICES'.split('');
 
   useEffect(() => {

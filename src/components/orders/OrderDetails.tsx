@@ -2,6 +2,7 @@ import { Order } from '@/types/order';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
+import CancelOrderButton from './CancelOrderButton';
 
 interface OrderItem {
   id: string;
@@ -134,6 +135,29 @@ export default function OrderDetails({ order }: OrderDetailsProps) {
         <span className="text-darkRed">{formatCurrency(order.payment_amount)}</span>
           </div>
         </div>
+      </div>
+
+      <div className="flex justify-between items-center border-t mt-6 pt-4">
+        <div className="text-gray-600">
+          Shipping Status: 
+          <span className={`ml-2 px-2 py-1 rounded-full text-sm ${
+            order.shipping_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+            order.shipping_status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+            order.shipping_status === 'delivered' ? 'bg-green-100 text-green-800' :
+            order.shipping_status === 'cancelled' ? 'bg-red-100 text-red-800' :
+            'bg-gray-100 text-gray-800'
+          }`}>
+            {order.shipping_status}
+          </span>
+        </div>
+        <CancelOrderButton 
+          orderId={order.$id}
+          shippingStatus={order.shipping_status}
+          onCancelSuccess={() => {
+            // Reload the order data
+            window.location.reload();
+          }}
+        />
       </div>
     </div>
   );

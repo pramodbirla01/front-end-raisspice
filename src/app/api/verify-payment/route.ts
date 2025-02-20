@@ -42,6 +42,56 @@ interface OrderDocument extends Models.Document {
     created_at: string;
 }
 
+// Update interface to match actual product structure
+interface ProductDocument extends Models.Document {
+    name: string;
+    stock: number;
+    weight: number[];
+    local_price: number[];
+    sale_price: number[];
+}
+
+// Helper functions for stock operations
+async function checkAndUpdateStock(products: any[]) {
+    try {
+        // Verify all products have sufficient stock
+        for (const product of products) {
+            const productDoc = await (databases.getDocument<ProductDocument>)(
+                process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+                process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
+                product.id
+            );
+
+            // Simple stock check
+            if (productDoc.stock < product.quantity) {
+                throw new Error(`Only ${productDoc.stock} items available for ${productDoc.name}`);
+            }
+
+            // Update stock
+            await (databases.updateDocument<ProductDocument>)(
+                process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+                process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
+                product.id,
+                { 
+                    stock: productDoc.stock - product.quantity 
+                }
+            );
+
+            console.log('Stock updated for product:', {
+                productId: product.id,
+                oldStock: productDoc.stock,
+                newStock: productDoc.stock - product.quantity,
+                deducted: product.quantity
+            });
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Stock operation failed:', error);
+        throw error;
+    }
+}
+
 export async function POST(request: Request) {
     try {
         const {
@@ -49,18 +99,15 @@ export async function POST(request: Request) {
             razorpay_order_id,
             razorpay_signature,
             orderData,
+            products,
             amount,
             user_id 
         } = await request.json();
 
-        // Enhanced validation
-        if (!orderData || !user_id) {
-            console.error('Missing data:', { orderData, user_id });
-            throw new Error('Invalid request data');
-        }
-
-        // Ensure user_id is set
-        orderData.user_id = user_id;
+        console.log('Processing payment verification:', {
+            orderId: razorpay_order_id,
+            paymentId: razorpay_payment_id
+        });
 
         // Verify payment signature
         const body = razorpay_order_id + "|" + razorpay_payment_id;
@@ -73,17 +120,15 @@ export async function POST(request: Request) {
             throw new Error('Invalid payment signature');
         }
 
-        console.log('Creating order with verified data:', {
-            user_id,
-            amount,
-            razorpay_order_id
-        });
+        // First update stock
+        await checkAndUpdateStock(products);
+        console.log('Stock updated successfully');
 
-        // Create the order document with proper typing
+        // Create order document
         const orderDocument: Omit<OrderDocument, keyof Models.Document> = {
             user_id: orderData.user_id,
             address: orderData.address,
-            status: 'confirmed',
+            status: 'pending',
             email: orderData.email,
             state: orderData.state,
             city: orderData.city,
@@ -91,7 +136,7 @@ export async function POST(request: Request) {
             phone_number: orderData.phone_number,
             payment_type: 'ONLINE',
             payment_status: 'completed',
-            shipping_status: 'processing',
+            shipping_status: 'pending',
             first_name: orderData.first_name,
             last_name: orderData.last_name,
             pincode: orderData.pincode,
@@ -109,25 +154,43 @@ export async function POST(request: Request) {
             created_at: new Date().toISOString()
         };
 
-        // Create order in Appwrite with explicit typing
+        // Then create order
         const order = await (databases.createDocument<OrderDocument>)(
             process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
             process.env.NEXT_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID!,
             ID.unique(),
             orderDocument
         );
+        console.log('Order created:', order.$id);
 
         return NextResponse.json({
             success: true,
-            message: 'Payment verified successfully',
-            orderId: order.$id
+            message: 'Payment verified and order created successfully',
+            orderId: order.$id,
+            orderDetails: {
+                email: orderData.email,
+                orderId: order.$id,
+                address: {
+                    full_name: orderData.first_name + ' ' + orderData.last_name,
+                    address_line1: orderData.address,
+                    city: orderData.city,
+                    state: orderData.state,
+                    pincode: orderData.pincode.toString()
+                },
+                amount: amount,
+                items: products.map((p: any) => ({
+                    name: p.name,
+                    quantity: p.quantity,
+                    price: p.selectedVariant.sale_price
+                }))
+            }
         });
 
     } catch (error: any) {
         console.error('Payment verification error:', error);
         return NextResponse.json({
             success: false,
-            error: error.message || 'Payment verification failed'
+            error: error instanceof Error ? error.message : 'Payment verification failed'
         }, { status: 500 });
     }
 }

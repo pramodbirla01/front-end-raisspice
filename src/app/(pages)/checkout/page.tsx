@@ -294,13 +294,9 @@ const CheckoutPage = () => {
                     name: 'Rais Spices',
                     description: 'Purchase from Rais Spices',
                     order_id: result.id,
-                    handler: async (response: any) => {
+                    handler: async function(response: any) {
                         try {
-                            console.log('Payment successful, verifying...', {
-                                orderId: response.razorpay_order_id,
-                                paymentId: response.razorpay_payment_id,
-                                userId: orderData.user_id
-                            });
+                            console.log('Payment successful, verifying...', response);
 
                             const verifyResponse = await fetch('/api/verify-payment', {
                                 method: 'POST',
@@ -310,13 +306,37 @@ const CheckoutPage = () => {
                                     razorpay_order_id: response.razorpay_order_id,
                                     razorpay_signature: response.razorpay_signature,
                                     orderData,
+                                    products: checkoutData.products,
                                     amount: finalAmount,
                                     user_id: orderData.user_id
                                 })
                             });
 
+                            if (!verifyResponse.ok) {
+                                throw new Error('Payment verification failed');
+                            }
+
                             const verifyResult = await verifyResponse.json();
+                            console.log('Verification result:', verifyResult);
+
                             if (verifyResult.success) {
+                                // Send email confirmation
+                                try {
+                                    await fetch('/api/send-order-email', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            email: verifyResult.orderDetails.email,
+                                            orderDetails: verifyResult.orderDetails,
+                                            products: checkoutData.products
+                                        })
+                                    });
+                                } catch (emailError) {
+                                    console.error('Email sending failed:', emailError);
+                                    // Continue with order success even if email fails
+                                }
+
+                                // Clear cart and show confirmation
                                 if (mode === 'cart') {
                                     dispatch(clearCart());
                                 }
@@ -327,11 +347,21 @@ const CheckoutPage = () => {
                             }
                         } catch (error) {
                             console.error('Verification error:', error);
-                            setErrorMessage('Payment verification failed. Please try again.');
+                            setErrorMessage(error instanceof Error ? error.message : 'Payment verification failed');
                             setShowErrorModal(true);
                         }
                     },
-                    // ...rest of Razorpay options...
+                    prefill: {
+                        name: currentCustomer?.full_name,
+                        email: currentCustomer?.email,
+                        contact: selectedAddress?.mobile
+                    },
+                    notes: {
+                        address: selectedAddress?.address_line1
+                    },
+                    theme: {
+                        color: '#9B2C2C'
+                    }
                 };
 
                 const rzp = new (window as any).Razorpay(options);
