@@ -204,7 +204,7 @@ const ProductCard: React.FC<ProductCardProps> = (props) => {
           setShowQuickAdd(false);
         }}
         onCartAdd={() => {
-          // Add any additional cart add logic here
+          // Add any additional cart add logic here bb 
         }}
       />
     </>

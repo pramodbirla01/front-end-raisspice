@@ -17,8 +17,8 @@ const validateEmailConfig = () => {
 };
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.hostinger.com',  // Hardcoded for reliability
-  port: 465,                   // Hardcoded for reliability
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '465'),
   secure: true,
   auth: {
     user: process.env.EMAIL_USER,

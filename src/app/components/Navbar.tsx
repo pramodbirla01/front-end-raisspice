@@ -201,7 +201,7 @@ const Navbar = () => {
                               {categories?.map((category: Category) => (
                                 <Link
                                   key={category.$id}
-                                  href={`/shop?category=${category.slug || category.name.toLowerCase().replace(/\s+/g, '-')}`}
+                                  href={`/shop?category=${category.$id || category.name.toLowerCase().replace(/\s+/g, '-')}`}
                                   className="block px-4 py-2 text-gray-800 hover:bg-gray-50 hover:text-lightRed transition-colors duration-300"
                                   onClick={() => handleCategoryClick(category.slug || category.name.toLowerCase().replace(/\s+/g, '-'))}
                                 >

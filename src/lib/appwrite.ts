@@ -28,6 +28,190 @@ export interface AddressData {
   country: string;
 }
 
+// Add these interfaces
+export interface AppwriteUser extends Models.Document {
+  email: string;
+  password: string;
+  resetToken: string | null;  // updated to allow null
+  resetTokenExpiry: string | null;  // updated to allow null
+  $id: string;
+}
+
+export interface DatabaseResponse<T> {
+  documents: T[];
+  total: number;
+}
+
+[{
+	"resource": "/D:/raisspices-website-working/raisspices-website-working/src/lib/appwrite.ts",
+	"owner": "typescript",
+	"code": "2304",
+	"severity": 8,
+	"message": "Cannot find name 'ATABASE_ID'.",
+	"source": "ts",
+	"startLineNumber": 46,
+	"startColumn": 71,
+	"endLineNumber": 46,
+	"endColumn": 81
+},{
+	"resource": "/D:/raisspices-website-working/raisspices-website-working/src/lib/appwrite.ts",
+	"owner": "typescript",
+	"code": "2304",
+	"severity": 8,
+	"message": "Cannot find name 'LECTION_ID'.",
+	"source": "ts",
+	"startLineNumber": 47,
+	"startColumn": 87,
+	"endLineNumber": 47,
+	"endColumn": 97
+},{
+	"resource": "/D:/raisspices-website-working/raisspices-website-working/src/lib/appwrite.ts",
+	"owner": "typescript",
+	"code": "2355",
+	"severity": 8,
+	"message": "A function whose declared type is neither 'undefined', 'void', nor 'any' must return a value.",
+	"source": "ts",
+	"startLineNumber": 146,
+	"startColumn": 29,
+	"endLineNumber": 146,
+	"endColumn": 38
+},{
+	"resource": "/D:/raisspices-website-working/raisspices-website-working/src/lib/appwrite.ts",
+	"owner": "typescript",
+	"code": "2304",
+	"severity": 8,
+	"message": "Cannot find name 'productId'.",
+	"source": "ts",
+	"startLineNumber": 161,
+	"startColumn": 7,
+	"endLineNumber": 161,
+	"endColumn": 16
+},{
+	"resource": "/D:/raisspices-website-working/raisspices-website-working/src/lib/appwrite.ts",
+	"owner": "typescript",
+	"code": "1128",
+	"severity": 8,
+	"message": "Declaration or statement expected.",
+	"source": "ts",
+	"startLineNumber": 165,
+	"startColumn": 3,
+	"endLineNumber": 165,
+	"endColumn": 4
+},{
+	"resource": "/D:/raisspices-website-working/raisspices-website-working/src/lib/appwrite.ts",
+	"owner": "typescript",
+	"code": "1005",
+	"severity": 8,
+	"message": "'try' expected.",
+	"source": "ts",
+	"startLineNumber": 165,
+	"startColumn": 5,
+	"endLineNumber": 165,
+	"endColumn": 10
+},{
+	"resource": "/D:/raisspices-website-working/raisspices-website-working/src/lib/appwrite.ts",
+	"owner": "typescript",
+	"code": "1128",
+	"severity": 8,
+	"message": "Declaration or statement expected.",
+	"source": "ts",
+	"startLineNumber": 169,
+	"startColumn": 1,
+	"endLineNumber": 169,
+	"endColumn": 2
+}]
+
+// Constants - Use NEXT_PUBLIC_ versions since those are what we have in .env.local
+export const APPWRITE_DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+export const APPWRITE_USERS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID!;
+
+// Type for database operations
+export type AppwriteDatabase = ServerDatabases | WebDatabases;
+
+// Add these types for Appwrite responses
+type AppwriteListResponse<T> = {
+  documents: T[];
+  total: number;
+};
+
+// Update TypedDatabase interface
+type TypedDatabase = {
+  listDocuments: <T extends Models.Document>(
+    databaseId: string,
+    collectionId: string,
+    queries?: string[]
+  ) => Promise<AppwriteListResponse<T>>;
+  
+  updateDocument: <T extends Models.Document>(
+    databaseId: string,
+    collectionId: string,
+    documentId: string,
+    data: Partial<T>
+  ) => Promise<T>;
+
+  createDocument: <T extends Models.Document>(
+    databaseId: string,
+    collectionId: string,
+    documentId: string,
+    data: Partial<T>
+  ) => Promise<T>;
+};
+
+// Update the getTypedDatabases function with proper type handling
+export function getTypedDatabases(): TypedDatabase {
+  const db = typeof window === 'undefined'
+    ? new ServerDatabases(createServerClient())
+    : new WebDatabases(createWebClient());
+
+  const typedDb: TypedDatabase = {
+    listDocuments: async <T extends Models.Document>(
+      databaseId: string,
+      collectionId: string,
+      queries?: string[]
+    ): Promise<AppwriteListResponse<T>> => {
+      const response = await (db as any).listDocuments(
+        databaseId,
+        collectionId,
+        queries
+      );
+      return {
+        documents: response.documents as T[],
+        total: response.total
+      };
+    },
+
+    updateDocument: async <T extends Models.Document>(
+      databaseId: string,
+      collectionId: string,
+      documentId: string,
+      data: Partial<T>
+    ): Promise<T> => {
+      return await (db as any).updateDocument(
+        databaseId,
+        collectionId,
+        documentId,
+        data
+      ) as T;
+    },
+
+    createDocument: async <T extends Models.Document>(
+      databaseId: string,
+      collectionId: string,
+      documentId: string,
+      data: Partial<T>
+    ): Promise<T> => {
+      return await (db as any).createDocument(
+        databaseId,
+        collectionId,
+        documentId,
+        data
+      ) as T;
+    }
+  };
+
+  return typedDb;
+}
+
 // Appwrite Client Configuration
 const createServerClient = (): ServerClient => {
   const client = new ServerClient();
@@ -71,7 +255,7 @@ export const getProduct = async (productId: string) => {
       collectionId: string,
       documentId: string
     ) => Promise<Models.Document>)(
-      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+      process.env.APPWRITE_DATABASE_ID!,
       process.env.NEXT_PUBLIC_APPWRITE_PRODUCT_COLLECTION_ID!,
       productId
     );
@@ -113,8 +297,8 @@ export const updateUserAddresses = async (userId: string, addresses: AddressData
       documentId: string,
       data: object
     ) => Promise<Models.Document>)(
-      process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
-      process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID!,
+      process.env.APPWRITE_DATABASE_ID!,
+      process.env.APPWRITE_USERS_COLLECTION_ID!,
       userId,
       { addresses }
     );
