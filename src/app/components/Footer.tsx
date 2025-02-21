@@ -50,6 +50,7 @@ export default function Footer() {
               <li><Link href="/terms-and-conditions" className="opacity-80 hover:opacity-100 text-sm block py-1">Terms & Conditions</Link></li>
               <li><Link href="/privacy-policy" className="opacity-80 hover:opacity-100 text-sm block py-1">Privacy Policy</Link></li>
               <li><Link href="/contact" className="opacity-80 hover:opacity-100 text-sm block py-1">Contact</Link></li>
+              <li><Link href="/track-order" className="opacity-80 hover:opacity-100 text-sm block py-1">Track order</Link></li>
             </ul>
           </div>
 

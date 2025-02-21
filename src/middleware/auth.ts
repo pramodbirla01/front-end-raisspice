@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verify } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { NextApiRequest, NextApiResponse } from 'next';
 
 export interface AuthenticatedRequest extends NextApiRequest {
@@ -37,14 +37,14 @@ export function middleware(request: NextRequest) {
 
 // Simple token verification
 export function verifyToken(token: string): TokenPayload {
-    if (!token) {
-        throw new Error('No token provided');
-    }
-
     try {
-        const decoded = verify(token, process.env.JWT_SECRET!);
-        return decoded as TokenPayload;
+        if (!process.env.JWT_SECRET) {
+            throw new Error('JWT_SECRET is not defined');
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET) as TokenPayload;
+        return decoded;
     } catch (error) {
+        console.error('Token verification failed:', error);
         throw new Error('Invalid token');
     }
 }

@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store'; // Fix: correct import path
 import toast from 'react-hot-toast'; // Fix: use react-hot-toast instead of react-toastify
 import CancelOrderButton from './CancelOrderButton';
+import { useRouter } from 'next/navigation';
 
 interface OrderItem {
   id: string;
@@ -24,6 +25,7 @@ interface OrderDetailsProps {
 }
 
 export default function OrderDetails({ order }: OrderDetailsProps) {
+  const router = useRouter();
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,6 +79,10 @@ export default function OrderDetails({ order }: OrderDetailsProps) {
       setIsLoading(false);
       dialogRef.current?.close();
     }
+  };
+
+  const handleTrackOrder = () => {
+    router.push(`/track-order?orderId=${order.$id}`);
   };
 
   return (
@@ -191,19 +197,29 @@ export default function OrderDetails({ order }: OrderDetailsProps) {
               {order.shipping_status}
             </span>
           </div>
-          {order.shipping_status !== 'pending' ? (
-            <button disabled className="px-4 py-2 text-white bg-black rounded">
-              {order.shipping_status === 'cancelled' ? 'Order Cancelled' : `Order ${order.shipping_status}`}
-            </button>
-          ) : (
-            <button
-              onClick={() => dialogRef.current?.showModal()}
-              disabled={isLoading}
-              className="px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
-            >
-              {isLoading ? 'Cancelling...' : 'Cancel Order'}
-            </button>
-          )}
+          <div className="flex gap-4">
+            {order.shipping_status !== 'cancelled' && (
+              <button
+                onClick={handleTrackOrder}
+                className="px-4 py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700"
+              >
+                Track Order
+              </button>
+            )}
+            {order.shipping_status !== 'pending' ? (
+              <button disabled className="px-4 py-2 text-white bg-black rounded">
+                {order.shipping_status === 'cancelled' ? 'Order Cancelled' : `Order ${order.shipping_status}`}
+              </button>
+            ) : (
+              <button
+                onClick={() => dialogRef.current?.showModal()}
+                disabled={isLoading}
+                className="px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+              >
+                {isLoading ? 'Cancelling...' : 'Cancel Order'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

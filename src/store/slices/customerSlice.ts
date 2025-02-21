@@ -102,37 +102,53 @@ export const fetchCustomerOrders = createAsyncThunk(
 );
 
 export const updateUserAddresses = createAsyncThunk(
-  'customer/updateAddresses',
-  async ({ userId, addresses }: { userId: string, addresses: string[] }) => {
+  'customer/updateUserAddresses',
+  async ({ userId, addresses }: { userId: string; addresses: string[] }, { getState }) => {
     try {
-      const response = await fetch(`/api/users/${userId}/addresses`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Cookies.get('auth_token')}`
-        },
-        body: JSON.stringify({ address: addresses }), // Note: using 'address' to match Appwrite field
-      });
+      const state = getState() as RootState;
+      const token = state.customer.token;
 
-      if (!response.ok) {
-        throw new Error('Failed to update addresses');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
 
+      const response = await fetch('/api/user/addresses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ addresses }),
+      });
+
       const data = await response.json();
-      return data.user;
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update addresses');
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to update addresses');
+      }
+
+      return data.addresses;
+    } catch (error) {
+      console.error('Error updating addresses:', error);
+      throw error;
     }
   }
 );
 
 export const fetchUserAddresses = createAsyncThunk(
   'customer/fetchAddresses',
-  async (userId: string) => {
+  async (userId: string, { getState }) => {
     try {
-      const response = await fetch(`/api/users/${userId}/addresses`, {
+      const state = getState() as RootState;
+      const token = state.customer.token;
+
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch('/api/user/addresses', {
         headers: {
-          'Authorization': `Bearer ${Cookies.get('auth_token')}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
       });
 
@@ -230,7 +246,7 @@ export const customerSlice = createSlice({
       })
       .addCase(updateUserAddresses.fulfilled, (state, action) => {
         if (state.currentCustomer) {
-          state.currentCustomer.address = action.payload.address;
+          state.currentCustomer.address = action.payload;
         }
       });
   }

@@ -40,23 +40,27 @@ export async function POST(request: NextRequest) {
         const decoded = verifyToken(token);
         const { addresses } = await request.json();
 
-        // Convert Address objects to strings if they aren't already
-        const addressStrings = addresses.map((addr: Address) => 
+        // Ensure addresses is an array of strings
+        const addressStrings = addresses.map((addr: string | object) => 
             typeof addr === 'string' ? addr : JSON.stringify(addr)
         );
+
+        console.log('Updating addresses for user:', decoded.userId, addressStrings);
 
         const updatedUser = await (databases.updateDocument as any)(
             process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
             process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID!,
             decoded.userId,
             {
-                address: addressStrings // Use 'address' field name to match schema
+                address: addressStrings
             }
-        );
+        ) as Models.Document;
+
+        console.log('Updated user:', updatedUser);
 
         return NextResponse.json({
             success: true,
-            addresses: updatedUser.address
+            addresses: updatedUser.address || []
         });
     } catch (error: any) {
         console.error('Error updating addresses:', error);

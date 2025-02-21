@@ -112,7 +112,7 @@ const ProductCard: React.FC<ProductCardProps> = (props) => {
         <Link href={`/product/${props.id}`} className="block h-full">
           <div
             key={props.id}
-            className="group bg-white rounded-2xl h-full shadow-premium hover:shadow-premium-hover transition-all duration-500"
+            className="group bg-gold-400 border-b border-gold-500 rounded-2xl h-full shadow-premium hover:shadow-premium-hover transition-all duration-500"
           >
             <div className="relative w-full overflow-hidden">
               {/* Product Image Container - Adjusted for full image */}
@@ -132,31 +132,31 @@ const ProductCard: React.FC<ProductCardProps> = (props) => {
 
               {/* Discount Badge */}
               {props.discount && (
-                <span className="absolute top-3 left-3 rounded-full bg-premium-50/90 backdrop-blur-sm border border-premium-200 px-3 py-1.5 text-xs sm:text-sm font-semibold text-premium-800 shadow-premium-button">
+                <span className="absolute top-2 left-2 rounded-xl bg-darkRed/40 backdrop-blur-sm border border-premium-200/25 px-3 py-1.5 text-xs sm:text-sm font-semibold text-premium-100 shadow-premium-button">
                   {(((props.price-props.discount)/props.price)*100).toFixed(1)}% OFF
                 </span>
               )}
 
               {/* Quick Action Icons with Theme Colors */}
               <div className="absolute top-3 right-3 flex flex-col gap-2">
-                <button className="bg-premium-50/90 backdrop-blur p-2 sm:p-2.5 rounded-full hover:bg-premium-100 shadow-premium-button hover:shadow-premium-hover transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100 transform translate-x-8 group-hover:translate-x-0">
-                  <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-premium-700 hover:text-premium-800 transition-colors" />
+                <button className="bg-premium-50/30 backdrop-blur p-2 sm:p-2.5 rounded-full hover:bg-premium-100 shadow-premium-button hover:shadow-premium-hover transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100 transform translate-x-8 group-hover:translate-x-0">
+                  <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-premium-50 hover:text-premium-800 transition-colors" />
                 </button>
                 <button 
                   onClick={handleCartIconClick}
-                  className="bg-premium-50/90 backdrop-blur p-2 sm:p-2.5 rounded-full hover:bg-premium-100 shadow-premium-button hover:shadow-premium-hover transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100 transform translate-x-8 group-hover:translate-x-0 delay-75"
+                  className="bg-premium-50/30 backdrop-blur p-2 sm:p-2.5 rounded-full hover:bg-premium-100 shadow-premium-button hover:shadow-premium-hover transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100 transform translate-x-8 group-hover:translate-x-0 delay-75"
                 >
-                  <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-premium-700 hover:text-premium-800 transition-colors" />
+                  <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-premium-50 hover:text-premium-800 transition-colors" />
                 </button>
               </div>
 
               {/* Size Options with Theme Colors */}
               {props.sizes && props.sizes.length > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 bg-premium-50/90 backdrop-blur-sm py-2.5 px-3 flex justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-full group-hover:translate-y-0 border-t border-premium-200/50">
+                <div className="absolute bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm py-2.5 px-3 flex justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-full group-hover:translate-y-0 ">
                   {props.sizes.map((size) => (
                     <button
                       key={size}
-                      className="text-xs sm:text-sm font-medium text-premium-700 hover:text-premium-900 transition-colors hover:scale-110 transform duration-200"
+                      className="text-xs sm:text-sm font-medium text-white hover:text-white/50 transition-colors hover:scale-110 transform duration-200"
                     >
                       {size}
                     </button>
@@ -167,7 +167,7 @@ const ProductCard: React.FC<ProductCardProps> = (props) => {
 
             {/* Product Info with Theme Colors */}
             <div className="p-4 sm:p-5 bg-gradient-to-b from-premium-50/50 to-white rounded-b-2xl">
-              <h3 className="text-premium-800 text-center font-medium text-sm sm:text-base md:text-lg mb-2.5 line-clamp-2 group-hover:text-premium-900 transition-colors duration-300">
+              <h3 className="text-premium-900 text-center font-bold capitalize text-sm sm:text-base md:text-lg mb-2.5 line-clamp-2 group-hover:text-lightRed transition-colors duration-300">
                 {props.title}
               </h3>
               <div className="flex justify-center items-center gap-3 text-sm sm:text-base">

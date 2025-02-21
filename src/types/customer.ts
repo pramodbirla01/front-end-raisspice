@@ -13,7 +13,6 @@ export interface CustomerAddress {
 }
 
 export interface Address {
-  id: string;
   full_name: string;
   mobile: string;
   address_line1: string;
@@ -21,8 +20,9 @@ export interface Address {
   city: string;
   state: string;
   pincode: string;
-  type: string;
+  type: 'home' | 'office' | 'other';
   is_default: boolean;
+  id: string;
 }
 
 export interface AddressData {
