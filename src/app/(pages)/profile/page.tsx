@@ -14,6 +14,8 @@ import ProfileTabs, { TabType } from '@/components/profile/ProfileTabs';
 import AuthGuard from '@/components/auth/AuthGuard';
 import { Address } from '@/types/customer';
 import Cookies from 'js-cookie';
+import Loader from '@/components/Loader';
+import ProfileSettings from '@/components/profile/ProfileSettings';
 
 export default function ProfilePage() {
   const [mounted, setMounted] = useState(false);
@@ -60,11 +62,7 @@ export default function ProfilePage() {
   if (!mounted) return null;
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-bgColor to-lightBgColor flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-red-800"></div>
-      </div>
-    );
+    return <Loader isLoading={true} />;
   }
 
   const renderTabContent = () => {
@@ -81,7 +79,9 @@ export default function ProfilePage() {
       case 'orders':
         return <OrderHistory />;
       case 'addresses':
-        return <AddressBook />; // Remove the addresses prop since we'll get it from Redux
+        return <AddressBook />;
+      case 'settings':
+        return <ProfileSettings />;
       default:
         return null;
     }

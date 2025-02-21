@@ -136,7 +136,7 @@ export async function sendOrderCancellationEmail(
       refund_amount: number;
       refund_due?: string;
     };
-    items: Array<{ name: string; quantity: number; price: number }>;
+    items: Array<{ name?: string; quantity?: number; price?: number }>;
     totalAmount: number;
   }
 ) {
@@ -169,7 +169,8 @@ export async function sendOrderCancellationEmail(
           <ul style="list-style: none; padding: 0;">
             ${orderDetails.items.map(item => `
               <li style="margin-bottom: 10px;">
-                ${item.name} x ${item.quantity} - ₹${item.price}
+                ${item.name || 'Product'} x ${item.quantity || 1}
+                ${item.price ? ` - ₹${item.price}` : ''}
               </li>
             `).join('')}
           </ul>

@@ -4,6 +4,7 @@ import { databases } from '@/lib/appwrite';
 import type { Blog } from '@/types/blog';
 import BlogCard from '@/components/BlogCard';
 import { Models } from 'appwrite';
+import Loader from '@/components/Loader';
 
 const BLOGS_PER_PAGE = 12;
 
@@ -50,9 +51,7 @@ export default function BlogPage() {
 
       <div className="container mx-auto px-4 max-w-7xl">
         {loading ? (
-          <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-darkRed"></div>
-          </div>
+          <Loader isLoading={true} />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">

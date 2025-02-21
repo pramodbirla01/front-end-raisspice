@@ -52,9 +52,9 @@ export default function CancelOrderButton({ orderId, shippingStatus, onCancelSuc
     return (
       <button 
         disabled 
-        className="px-4 py-2 text-gray-500 bg-gray-200 rounded cursor-not-allowed"
+        className="px-4 py-2 text-white bg-black rounded"
       >
-        Cannot Cancel - Order {shippingStatus}
+        {shippingStatus === 'cancelled' ? 'Order Cancelled' : `Order ${shippingStatus}`}
       </button>
     );
   }
@@ -72,24 +72,29 @@ export default function CancelOrderButton({ orderId, shippingStatus, onCancelSuc
 
       <dialog
         ref={dialogRef}
-        className="rounded-lg shadow-xl p-0 backdrop:bg-black/50 open:animate-fade-in"
+        className="fixed inset-0 w-full h-full bg-black/50 flex items-center justify-center p-4"
+        onClick={(e) => {
+          if (e.target === dialogRef.current) {
+            dialogRef.current.close();
+          }
+        }}
       >
-        <div className="min-w-[300px] p-6">
-          <h3 className="text-lg font-medium mb-4">Are you sure you want to cancel this order?</h3>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto" onClick={e => e.stopPropagation()}>
+          <h3 className="text-xl font-semibold mb-4 text-center">Are you sure you want to cancel this order?</h3>
+          <p className="text-gray-600 mb-6 text-center">
             This action cannot be undone. If you paid online, a refund will be initiated.
           </p>
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-center gap-4">
             <button
               onClick={() => dialogRef.current?.close()}
-              className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
+              className="px-6 py-2 text-gray-600 border rounded hover:bg-gray-50"
             >
               No, Keep Order
             </button>
             <button
               onClick={handleCancel}
               disabled={isLoading}
-              className={`px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700
+              className={`px-6 py-2 text-white bg-red-600 rounded hover:bg-red-700
                 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {isLoading ? 'Processing...' : 'Yes, Cancel Order'}

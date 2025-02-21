@@ -14,7 +14,6 @@ import { useLoading } from '../hooks/useLoading';
 import { fetchHeroSections } from '@/store/slices/heroSectionSlice';
 import { fetchCollections } from '@/store/slices/collectionSlice';
 import ErrorBoundary from '@/components/ErrorBoundary';
-// import Blog from './components/Blog';
 import Blog from '@/components/Blog';
 
 export default function HomeContent() {
@@ -50,7 +49,7 @@ export default function HomeContent() {
   }
 
   return (
-    // <ErrorBoundary>
+     <ErrorBoundary>
       <main className="min-h-screen">
         <div>
           <HeroSection />
@@ -62,6 +61,6 @@ export default function HomeContent() {
           <TrustedBy />
         </div>
       </main>
-    // </ErrorBoundary>
+      </ErrorBoundary> 
   );
 }

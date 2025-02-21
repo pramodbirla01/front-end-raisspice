@@ -7,8 +7,17 @@ export interface User {
 }
 
 export interface AuthResponse {
-  token: string;
-  user: User;
+  success: boolean;
+  message?: string;
+  token?: string;
+  error?: string;
+}
+
+export interface TokenPayload {
+  userId: string;
+  email: string;
+  role: boolean;
+  customerId?: string;  // Add this to match the token structure
 }
 
 export interface LoginCredentials {

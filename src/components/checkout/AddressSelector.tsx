@@ -82,7 +82,7 @@ const AddressSelector = ({
                     <span className="mr-2">+</span> Add New Address
                 </button>
             ) : (
-                <div className="border p-4 rounded-lg">
+                <div className="border py-5 p-4 rounded-lg   fixed inset-0 bg-white z-50 max-w-3xl mx-auto top-[11%] mt-40 shadow-2xl overflow-y-auto">
                     <div className="flex justify-between mb-4">
                         <h3 className="font-medium">Add New Address</h3>
                         <button 

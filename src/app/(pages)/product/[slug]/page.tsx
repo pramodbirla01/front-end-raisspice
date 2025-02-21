@@ -12,7 +12,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { getStorageFileUrl } from "@/lib/appwrite";
 import { calculateAverageRating, getOrCreateReview } from '@/utils/reviewUtils';
 import { Review } from '@/types/review';
-
+import Loader from "@/components/Loader";
 interface ProductPageProps {
   params: Promise<{
     slug: string;
@@ -189,11 +189,7 @@ const ProductPage = ({ params }: ProductPageProps) => {
   };
 
   if (loading) {
-    return (
-      <div className="w-full min-h-[60vh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-red-500 border-t-transparent"></div>
-      </div>
-    );
+    return <Loader isLoading={true} />;
   }
 
   if (error || !product) {

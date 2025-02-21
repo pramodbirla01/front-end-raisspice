@@ -59,7 +59,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-2 ">
             <div className="grid grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700">Full Name</label>
@@ -67,7 +67,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
                         type="text"
                         value={formData.full_name}
                         onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-darkRed focus:ring-darkRed"
+                        className="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-darkRed focus:ring-1 focus:ring-darkRed px-4 py-2"
                     />
                     {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>}
                 </div>
@@ -77,7 +77,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
                         type="tel"
                         value={formData.mobile}
                         onChange={handlePhoneChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-darkRed focus:ring-darkRed"
+                        className="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-darkRed focus:ring-1 focus:ring-darkRed px-4 py-2"
                         maxLength={10}
                     />
                     {errors.mobile && <p className="text-red-500 text-xs mt-1">{errors.mobile}</p>}
@@ -90,7 +90,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
                     type="text"
                     value={formData.address_line1}
                     onChange={(e) => setFormData(prev => ({ ...prev, address_line1: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-darkRed focus:ring-darkRed"
+                    className="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-darkRed focus:ring-1 focus:ring-darkRed px-4 py-2"
                 />
                 {errors.address_line1 && <p className="text-red-500 text-xs mt-1">{errors.address_line1}</p>}
             </div>
@@ -101,7 +101,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
                     type="text"
                     value={formData.address_line2}
                     onChange={(e) => setFormData(prev => ({ ...prev, address_line2: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-darkRed focus:ring-darkRed"
+                    className="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-darkRed focus:ring-1 focus:ring-darkRed px-4 py-2"
                 />
             </div>
 
@@ -112,7 +112,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
                         type="text"
                         value={formData.city}
                         onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-darkRed focus:ring-darkRed"
+                        className="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-darkRed focus:ring-1 focus:ring-darkRed px-4 py-2"
                     />
                     {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                 </div>
@@ -122,7 +122,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
                         type="text"
                         value={formData.state}
                         onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-darkRed focus:ring-darkRed"
+                        className="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-darkRed focus:ring-1 focus:ring-darkRed px-4 py-2"
                     />
                     {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
                 </div>
@@ -135,7 +135,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
                         type="text"
                         value={formData.pincode}
                         onChange={(e) => setFormData(prev => ({ ...prev, pincode: e.target.value }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-darkRed focus:ring-darkRed"
+                        className="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-darkRed focus:ring-1 focus:ring-darkRed px-4 py-2"
                     />
                     {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
                 </div>
@@ -144,7 +144,7 @@ const AddressForm = ({ onSubmit, initialData, userPhone, onUpdatePhone }: Addres
                     <select
                         value={formData.type}
                         onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'home' | 'office' }))}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-darkRed focus:ring-darkRed"
+                        className="mt-1 block w-full rounded-md border-2 border-gray-300 shadow-sm focus:border-darkRed focus:ring-1 focus:ring-darkRed px-4 py-2"
                     >
                         <option value="home">Home</option>
                         <option value="office">Office</option>

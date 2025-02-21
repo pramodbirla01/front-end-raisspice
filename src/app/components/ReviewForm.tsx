@@ -41,10 +41,10 @@ const ReviewForm: React.FC<ReviewFormProps> = ({ onSubmit, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg max-w-2xl w-full mx-4">
+    <div className="fixed inset-0 top-[11%] h-[90%] bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white px-4 py-2 rounded-lg max-w-2xl w-full mx-4">
         <h3 className="text-xl font-semibold mb-4">Write a Review</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-2">
           {/* Rating Stars */}
           <div className="mb-4">
             <label className="block text-sm font-medium mb-2">Rating *</label>

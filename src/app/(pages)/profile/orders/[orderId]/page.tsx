@@ -7,6 +7,7 @@ import OrderDetails from '@/components/orders/OrderDetails';
 import AuthGuard from '@/components/auth/AuthGuard';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
+import Loader from '@/components/Loader';
 
 export default function OrderDetailsPage() {
   const { orderId } = useParams();
@@ -60,11 +61,7 @@ export default function OrderDetailsPage() {
   }, [orderId, token, router]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-500 border-t-transparent"></div>
-      </div>
-    );
+    return <Loader isLoading={true} />;
   }
 
   if (error || !order) {

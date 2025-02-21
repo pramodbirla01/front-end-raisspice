@@ -5,6 +5,7 @@ import { fetchUserOrders } from '@/store/slices/orderSlice';
 import { formatCurrency } from '@/utils/formatCurrency';
 import Link from 'next/link';
 import Pagination from '../ui/Pagination';
+import Loader from '@/components/Loader';
 
 export default function OrderHistory() {
   const dispatch = useDispatch<AppDispatch>();
@@ -49,12 +50,7 @@ export default function OrderHistory() {
   };
 
   if (loading || isLoadingPage) {
-    return (
-      <div className="flex flex-col items-center justify-center p-8 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-800"></div>
-        <p className="text-gray-600">Loading orders...</p>
-      </div>
-    );
+    return <Loader isLoading={true} />;
   }
 
   if (error) {

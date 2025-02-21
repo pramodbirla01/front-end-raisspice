@@ -3,17 +3,27 @@
 import { useState, useEffect } from 'react';
 import { Star, ChevronDown, ChevronRight } from 'lucide-react';
 import { FaRegUser } from "react-icons/fa";
-import { databases } from '@/lib/appwrite';
+import { databases, getTypedDatabases, Models } from '@/lib/appwrite';
 import { Query } from 'appwrite';
 import { calculateAverageRating, getOrCreateReview } from '@/utils/reviewUtils';
 import ReviewForm from './ReviewForm';
+import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { motion } from 'framer-motion';
 
 interface ReviewProps {
   productId: string;
 }
 
-interface Review {
+// Update Review interface to include all required Appwrite Document properties
+interface Review extends Models.Document {
   $id: string;
+  $collectionId: string;
+  $databaseId: string;
+  $createdAt: string;
+  $updatedAt: string;
+  $permissions: string[];
   review: string[];
   rating: number[];
   user: string[];
@@ -22,8 +32,10 @@ interface Review {
 }
 
 const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [reviewData, setReviewData] = useState<Review | null>(null);
   const [newReview, setNewReview] = useState({
     userName: '',
@@ -32,6 +44,11 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
     rating: 0
   });
   const [loading, setLoading] = useState(true);
+  const [displayCount, setDisplayCount] = useState(5);
+  
+  // Get auth state from Redux
+  const { token } = useSelector((state: RootState) => state.customer);
+  const isLoggedIn = !!token;
 
   useEffect(() => {
     fetchReviews();
@@ -39,7 +56,7 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
 
   const fetchReviews = async () => {
     try {
-      const review = await getOrCreateReview(productId);
+      const review = await getOrCreateReview(productId) as Review;
       setReviewData(review);
       setLoading(false);
     } catch (error) {
@@ -56,6 +73,7 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
   }) => {
     try {
       const existingData = await getOrCreateReview(productId);
+      const typedDatabases = getTypedDatabases();
       
       // Only include the fields we need
       const updatedReview = {
@@ -66,7 +84,7 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
         product_id: productId
       };
 
-      await databases.updateDocument(
+      await typedDatabases.updateDocument<Review>(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         process.env.NEXT_PUBLIC_APPWRITE_REVIEW_COLLECTION_ID!,
         productId,
@@ -79,6 +97,18 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
       console.error('Error submitting review:', error);
       throw error; // Re-throw to handle in the form
     }
+  };
+
+  const handleWriteReviewClick = () => {
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+    } else {
+      setShowReviewForm(true);
+    }
+  };
+
+  const handleViewMore = () => {
+    setDisplayCount(prev => prev + 5);
   };
 
   return (
@@ -116,7 +146,7 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
             {/* Add Review Button */}
             <div className="w-full h-full flex justify-center items-center py-8">
               <button 
-                onClick={() => setShowReviewForm(true)}
+                onClick={handleWriteReviewClick}
                 className="w-full py-2 text-white bg-red-800 hover:bg-red-900 transition-colors"
               >
                 Write a review
@@ -124,8 +154,36 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
             </div>
           </div>
 
-          {/* Replace the existing review form modal with the new ReviewForm component */}
-          {showReviewForm && (
+          {/* Login Modal */}
+          {showLoginModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4"
+              >
+                <h2 className="text-2xl font-semibold mb-4">Login Required</h2>
+                <p className="text-gray-600 mb-6">Please login to write a review.</p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => router.push('/login')}
+                    className="flex-1 bg-darkRed text-white py-2 rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={() => setShowLoginModal(false)}
+                    className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {/* Review Form */}
+          {showReviewForm && isLoggedIn && (
             <ReviewForm
               onSubmit={handleReviewSubmit}
               onCancel={() => setShowReviewForm(false)}
@@ -134,7 +192,7 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
 
           {/* Reviews List */}
           <div className="space-y-6 mt-8">
-            {reviewData?.review.map((review, index) => (
+            {reviewData?.review.slice(0, displayCount).map((review, index) => (
               <div key={index} className="border-b pb-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -159,7 +217,28 @@ const CustomerReviews: React.FC<ReviewProps> = ({ productId }) => {
                 </div>
               </div>
             ))}
+
+            {/* View More Button */}
+            {reviewData && reviewData.review.length > displayCount && (
+              <div className="flex justify-center mt-8">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleViewMore}
+                  className="px-6 py-2 text-red-800 border border-red-800 rounded-full hover:bg-red-50 transition-colors"
+                >
+                  View More Reviews
+                </motion.button>
+              </div>
+            )}
           </div>
+
+          {/* Show message when no reviews */}
+          {reviewData && reviewData.review.length === 0 && (
+            <div className="text-center text-gray-500 mt-8">
+              No reviews yet. Be the first to review this product!
+            </div>
+          )}
         </div>
       </div>
     </section>
