@@ -223,9 +223,11 @@ const Navbar = () => {
                       </motion.div>
                     )}
                     <motion.span 
-                      className="absolute bottom-0 left-0 w-0 h-0.5 bg-lightRed"
-                      whileHover={{ width: "100%" }}
-                      transition={{ duration: 0.3 }}
+                      className="absolute bottom-0 left-0 w-0 h-0.5 bg-nav-gradient bg-nav-animate group-hover:w-full transition-all duration-300"
+                      whileHover={{ 
+                        backgroundPosition: ["0% 50%", "100% 50%"],
+                        transition: { duration: 0.3, ease: "easeInOut" }
+                      }}
                     />
                   </motion.li>
                 ))}

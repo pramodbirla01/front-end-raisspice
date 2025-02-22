@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://raisspices.com/sitemap.xml
+
+# Disallow paths
+Disallow: /api/
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /login/
+Disallow: /register/
+Disallow: /reset-password/
