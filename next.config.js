@@ -4,18 +4,19 @@ const path = require('path');
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: [
-      '147.93.108.70',
-      'localhost'
-    ],
+    domains: ['147.93.108.70'],
     remotePatterns: [
       {
         protocol: 'http',
         hostname: '147.93.108.70',
         port: '8080',
-        pathname: '/v1/storage/buckets/**',
+        pathname: '/**', // Make it less restrictive
       },
     ],
+    minimumCacheTTL: 60,
+    // Add this to handle large images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {

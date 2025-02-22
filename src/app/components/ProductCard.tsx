@@ -1,4 +1,3 @@
-import { getFullImageUrl } from "@/utils/imageUtils";
 import { getStorageFileUrl } from "@/lib/appwrite";
 import { ShoppingCart, Heart } from "lucide-react"; // Remove unused imports
 import Image from "next/image";
@@ -83,6 +82,7 @@ const ProductCard: React.FC<ProductCardProps> = (props) => {
 
   const transformToProduct = (): Product => {
     // Create proper product object with all required data
+    console.log("prop data addtional",props.additionalImages)
     const productData: Product = {
       $id: props.id,
       name: props.title,
@@ -97,7 +97,7 @@ const ProductCard: React.FC<ProductCardProps> = (props) => {
       sale_price: props.sale_price || [],
       slug: props.slug
     };
-
+      console.log(productData);
     return productData;
   };
 

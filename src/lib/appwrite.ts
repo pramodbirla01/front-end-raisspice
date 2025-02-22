@@ -273,14 +273,31 @@ export const getStorageFileUrl = (fileId: string): string => {
   }
 
   try {
-    return `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${
+    // Construct URL carefully to avoid duplicate parameters
+    const baseUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${
       process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID
-    }/files/${fileId}/preview?project=${
-      process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID
-    }`;
+    }/files/${fileId}/view`;
+
+    const params = new URLSearchParams({
+      project: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '',
+      mode: 'admin'
+    });
+
+    return `${baseUrl}?${params.toString()}`;
   } catch (error) {
     console.error('Error generating storage URL:', error);
     return '/placeholder-image.jpg';
+  }
+};
+
+// Add this new helper function for debug purposes
+export const validateImageUrl = async (url: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.error('Error validating image URL:', error);
+    return false;
   }
 };
 
