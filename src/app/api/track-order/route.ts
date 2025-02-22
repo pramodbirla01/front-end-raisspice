@@ -7,8 +7,9 @@ import axios from 'axios';
 interface OrderDocument extends Models.Document {
     status: string;
     payment_status: string;
-    shiprocket_shipment_id?: string;
-    shipping_status?: string;
+    shipping_status: string;
+    tracking_id: string;
+    shiprocket_order_id?: string; // Add this field
     $createdAt: string;
     $id: string;
 }
@@ -41,17 +42,17 @@ async function getShiprocketToken() {
     }
 }
 
-async function getShipmentTracking(shipmentId: string, token: string) {
+async function getOrderTracking(orderId: string, token: string) {
     try {
         const response = await axios.get(
-            `${process.env.SHIPROCKET_API_URL}/courier/track/shipment/${shipmentId}`,
+            `${process.env.SHIPROCKET_API_URL}/courier/track/order/${orderId}`,
             {
                 headers: { 'Authorization': `Bearer ${token}` }
             }
         );
         return response.data;
     } catch (error) {
-        console.error('Error fetching shipment tracking:', error);
+        console.error('Error fetching order tracking:', error);
         return null;
     }
 }
@@ -68,15 +69,15 @@ export async function GET(request: Request) {
             });
         }
 
-        // Get order from Appwrite with explicit typing and parentheses
-        const order = await (databases.getDocument<OrderDocument>)(
+        // Fix TypeScript error by using type assertion
+        const order = await (databases.getDocument as any)(
             process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
             process.env.NEXT_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID!,
             orderId
-        );
+        ) as OrderDocument;
 
         // Initialize tracking events array
-        const tracking_data = [
+        let tracking_data = [
             {
                 activity: 'Order Placed',
                 date: order.$createdAt,
@@ -95,42 +96,29 @@ export async function GET(request: Request) {
             });
         }
 
-        // If order has shipment details, get tracking from Shiprocket
-        if (order.shiprocket_shipment_id) {
+        // If order has Shiprocket ID, get tracking from Shiprocket
+        if (order.shiprocket_order_id) {
             try {
-                const token = await getShiprocketToken();
-                if (token) { // Add null check for token
-                    const shipmentTracking = await getShipmentTracking(
-                        order.shiprocket_shipment_id,
-                        token
-                    );
-
-                    if (shipmentTracking?.tracking_data?.length > 0) {
-                        // Map Shiprocket tracking data to our format
-                        const shiprocketEvents = shipmentTracking.tracking_data.map(
-                            (event: any) => ({
-                                activity: event.activity,
-                                date: event.date,
-                                location: event.location,
-                                status: 'completed'
-                            })
-                        );
-                        tracking_data.push(...shiprocketEvents);
+                const response = await fetch('/api/shiprocket', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
                     }
+                });
+                const shipmentTracking = await response.json();
+                
+                if (shipmentTracking?.tracking_data?.shipment_track) {
+                    const shiprocketEvents = shipmentTracking.tracking_data.shipment_track.map((track: any) => ({
+                        activity: track.activity,
+                        date: track.date,
+                        location: track.location || 'In Transit',
+                        status: track.status === 'delivered' ? 'completed' : 'current'
+                    }));
+                    tracking_data = [...tracking_data, ...shiprocketEvents];
                 }
             } catch (error) {
-                console.error('Failed to fetch shipping details:', error);
+                console.error('Error fetching Shiprocket tracking:', error);
             }
-        }
-
-        // Add processing status
-        if (order.status === 'processing') {
-            tracking_data.push({
-                activity: 'Order Processing',
-                date: new Date().toISOString(),
-                location: 'Warehouse',
-                status: 'current'
-            });
         }
 
         return NextResponse.json({
@@ -139,9 +127,8 @@ export async function GET(request: Request) {
                 orderId: order.$id,
                 status: order.status,
                 shipping_status: order.shipping_status,
-                tracking_data: tracking_data.sort((a, b) => 
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                )
+                tracking_id: order.tracking_id,
+                tracking_data: tracking_data
             }
         });
 

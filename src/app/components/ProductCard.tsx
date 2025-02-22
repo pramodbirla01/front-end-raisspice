@@ -108,86 +108,93 @@ const ProductCard: React.FC<ProductCardProps> = (props) => {
   return (
     <>
       <div className="w-full h-full">
-        {/* Update the Link href to use the product ID */}
         <Link href={`/product/${props.id}`} className="block h-full">
           <div
             key={props.id}
-            className="group bg-gold-400 border-b border-gold-500 rounded-2xl h-full shadow-premium hover:shadow-premium-hover transition-all duration-500"
+            className="group relative rounded-2xl h-full shadow-premium hover:shadow-premium-hover transition-all duration-500 overflow-hidden"
+            style={{
+              backgroundImage: `url('/images/product-card.jpg')`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              backgroundBlendMode: 'overlay'
+            }}
           >
-            <div className="relative w-full overflow-hidden">
-              {/* Product Image Container - Adjusted for full image */}
-              <div className="aspect-[3/4] overflow-hidden rounded-t-2xl">
-                <Image
-                  width={400}
-                  height={500}
-                  src={getValidImageUrl(imageToShow.url)}
-                  alt={imageToShow.alt || props.title || 'Product image'}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  priority
-                />
-                
-                {/* Themed Overlay on Hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-premium-600/40 via-premium-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
-              </div>
-
-              {/* Discount Badge */}
-              {props.discount && (
-                <span className="absolute top-2 left-2 rounded-xl bg-darkRed/40 backdrop-blur-sm border border-premium-200/25 px-3 py-1.5 text-xs sm:text-sm font-semibold text-premium-100 shadow-premium-button">
-                  {(((props.price-props.discount)/props.price)*100).toFixed(1)}% OFF
-                </span>
-              )}
-
-              {/* Quick Action Icons with Theme Colors */}
-              <div className="absolute top-3 right-3 flex flex-col gap-2">
-                <button className="bg-premium-50/30 backdrop-blur p-2 sm:p-2.5 rounded-full hover:bg-premium-100 shadow-premium-button hover:shadow-premium-hover transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100 transform translate-x-8 group-hover:translate-x-0">
-                  <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-premium-50 hover:text-premium-800 transition-colors" />
-                </button>
-                <button 
-                  onClick={handleCartIconClick}
-                  className="bg-premium-50/30 backdrop-blur p-2 sm:p-2.5 rounded-full hover:bg-premium-100 shadow-premium-button hover:shadow-premium-hover transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100 transform translate-x-8 group-hover:translate-x-0 delay-75"
-                >
-                  <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-premium-50 hover:text-premium-800 transition-colors" />
-                </button>
-              </div>
-
-              {/* Size Options with Theme Colors */}
-              {props.sizes && props.sizes.length > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm py-2.5 px-3 flex justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-full group-hover:translate-y-0 ">
-                  {props.sizes.map((size) => (
-                    <button
-                      key={size}
-                      className="text-xs sm:text-sm font-medium text-white hover:text-white/50 transition-colors hover:scale-110 transform duration-200"
-                    >
-                      {size}
-                    </button>
-                  ))}
+            {/* Main content */}
+            <div className="relative z-10">
+              <div className="relative w-full overflow-hidden">
+                {/* Product Image Container - Adjusted for full image */}
+                <div className="aspect-[3/4] overflow-hidden rounded-t-2xl">
+                  <Image
+                    width={400}
+                    height={500}
+                    src={getValidImageUrl(imageToShow.url)}
+                    alt={imageToShow.alt || props.title || 'Product image'}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    priority
+                  />
+                  
+                  {/* Themed Overlay on Hover */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-premium-600/40 via-premium-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300" />
                 </div>
-              )}
-            </div>
 
-            {/* Product Info with Theme Colors */}
-            <div className="p-4 sm:p-5 bg-gradient-to-b from-premium-50/50 to-white rounded-b-2xl">
-              <h3 className="text-premium-900 text-center font-bold capitalize text-sm sm:text-base md:text-lg mb-2.5 line-clamp-2 group-hover:text-lightRed transition-colors duration-300">
-                {props.title}
-              </h3>
-              <div className="flex justify-center items-center gap-3 text-sm sm:text-base">
-                {hasValidDiscount() ? (
-                  <>
-                    {/* Original price with line-through */}
-                    <span className="text-premium-400 font-medium line-through">
-                      ₹{formatPrice(props.local_price?.[0])}
-                    </span>
-                    {/* Sale price without line-through */}
-                    <span className="text-premium-800 font-semibold tracking-wide">
-                      ₹{formatPrice(props.sale_price?.[0])}
-                    </span>
-                  </>
-                ) : (
-                  // Show only the regular price if no valid discount
-                  <span className="text-premium-800 font-semibold tracking-wide">
-                    ₹{formatPrice(props.local_price?.[0])}
+                {/* Discount Badge */}
+                {props.discount && (
+                  <span className="absolute top-2 left-2 rounded-xl bg-darkRed/40 backdrop-blur-sm border border-premium-200/25 px-3 py-1.5 text-xs sm:text-sm font-semibold text-premium-100 shadow-premium-button">
+                    {(((props.price-props.discount)/props.price)*100).toFixed(1)}% OFF
                   </span>
                 )}
+
+                {/* Quick Action Icons with Theme Colors */}
+                <div className="absolute top-3 right-3 flex flex-col gap-2">
+                  <button className="bg-premium-50/30 backdrop-blur p-2 sm:p-2.5 rounded-full hover:bg-premium-100 shadow-premium-button hover:shadow-premium-hover transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100 transform translate-x-8 group-hover:translate-x-0">
+                    <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-premium-50 hover:text-premium-800 transition-colors" />
+                  </button>
+                  <button 
+                    onClick={handleCartIconClick}
+                    className="bg-premium-50/30 backdrop-blur p-2 sm:p-2.5 rounded-full hover:bg-premium-100 shadow-premium-button hover:shadow-premium-hover transition-all duration-300 hover:scale-110 opacity-0 group-hover:opacity-100 transform translate-x-8 group-hover:translate-x-0 delay-75"
+                  >
+                    <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5 text-premium-50 hover:text-premium-800 transition-colors" />
+                  </button>
+                </div>
+
+                {/* Size Options with Theme Colors */}
+                {props.sizes && props.sizes.length > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-white/30 backdrop-blur-sm py-2.5 px-3 flex justify-center gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-full group-hover:translate-y-0 ">
+                    {props.sizes.map((size) => (
+                      <button
+                        key={size}
+                        className="text-xs sm:text-sm font-medium text-white hover:text-white/50 transition-colors hover:scale-110 transform duration-200"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Info - removed gradient background */}
+              <div className="p-4 sm:p-5 ">
+                <h3 className="text-premium-900 text-center font-bold capitalize text-sm sm:text-base md:text-lg mb-2.5 line-clamp-2 group-hover:text-lightRed transition-colors duration-300">
+                  {props.title}
+                </h3>
+                <div className="flex justify-center items-center gap-3 text-sm sm:text-base">
+                  {hasValidDiscount() ? (
+                    <>
+                      <span className="text-premium-900 font-medium line-through  px-2 rounded">
+                        ₹{formatPrice(props.local_price?.[0])}
+                      </span>
+                      <span className="text-premium-900 font-semibold tracking-wide  px-2 rounded">
+                        ₹{formatPrice(props.sale_price?.[0])}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-premium-900 font-semibold tracking-wide bg-white/40 px-2 rounded">
+                      ₹{formatPrice(props.local_price?.[0])}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

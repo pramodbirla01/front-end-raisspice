@@ -18,17 +18,31 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description, ind
     animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
     transition={{ duration: 0.6, delay: index * 0.2 }}
     whileHover={{ y: -5 }}
-    className="flex flex-col items-center text-center p-8 space-y-4 bg-lightestBgColor rounded-lg border border-darkRed/10"
+    className="flex flex-col items-center text-center p-8 space-y-4 rounded-lg border border-darkRed/10 relative overflow-hidden"
   >
-    <motion.div 
-      whileHover={{ rotate: [0, -10, 10, -10, 0] }}
-      transition={{ duration: 0.5 }}
-      className="text-darkRed p-3 bg-lightBgColor rounded-full"
-    >
-      {icon}
-    </motion.div>
-    <h3 className="text-xl font-semibold text-darkRed">{title}</h3>
-    <p className="text-gray-700">{description}</p>
+    {/* Background image div */}
+    <div 
+      className="absolute inset-0"
+      style={{
+        backgroundImage: `url('/images/product-card.jpg')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        opacity: 0.2,
+      }}
+    />
+    
+    {/* Content with higher z-index */}
+    <div className="relative z-10 flex flex-col items-center space-y-4 w-full">
+      <motion.div 
+        whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+        transition={{ duration: 0.5 }}
+        className="text-darkRed p-3 bg-white/80 backdrop-blur-sm rounded-full"
+      >
+        {icon}
+      </motion.div>
+      <h3 className="text-xl font-semibold text-darkRed">{title}</h3>
+      <p className="text-gray-700">{description}</p>
+    </div>
   </motion.div>
 );
 
@@ -155,7 +169,7 @@ const MiniSection = () => {
             {/* Navigation Buttons */}
             <button
               onClick={goToPrevSlide}
-              className={`absolute left-0 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-md ${
+              className={`absolute left-0 top-1/2 -translate-y-1/2 p-2 bg-white/40 rounded-full shadow-md ${
                 currentSlide === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white'
               }`}
               disabled={currentSlide === 0}
